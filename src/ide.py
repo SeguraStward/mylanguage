@@ -1,29 +1,41 @@
 import tkinter as tk
-from tkinter import ttk, scrolledtext, messagebox, Menu
-import sys
-import os
+from tkinter import ttk, scrolledtext, messagebox, Menu, filedialog 
+import traceback
 
-class AuroLangIDE:
+from .compiler import aurumCompiler, CompilationResult
+
+class AurumIDE:
+
+    #inicia el ide
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("AuroLang IDE - Compilador e Intérprete")
+        self.root.title("Aurum IDE - Compilador e Interprete")
         self.root.geometry("1200x800")
         self.root.configure(bg='#2b2b2b')
         
-        # Variables para el estado del IDE
+        # variables para el estado del ide
         self.current_file = None
         self.code_modified = False
+
+        # inicializar el compilador
+        self.compiler = aurumCompiler()
+        self.compiler.set_verbose(True)
         
+        # resultado de compilacion actual
+        self.last_compilation: CompilationResult = None
+        # inicializa el menu, la ui y los bindings
         self.setup_menu()
         self.setup_ui()
         self.setup_bindings()
         
+
     def setup_menu(self):
         """Configura el menú principal"""
+        # de tkinter utilizamos un Menu para hacer los menus
         menubar = Menu(self.root)
         self.root.config(menu=menubar)
         
-        # Menú Archivo
+        # menu para acciones de archivos
         file_menu = Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Archivo", menu=file_menu)
         file_menu.add_command(label="Nuevo", command=self.new_file, accelerator="Ctrl+N")
@@ -32,12 +44,12 @@ class AuroLangIDE:
         file_menu.add_separator()
         file_menu.add_command(label="Salir", command=self.root.quit)
         
-        # Menú Lenguaje
+        # menu para mostrar info del lenguaje, sintaxis, ejemplos etc
         language_menu = Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Lenguaje", menu=language_menu)
         language_menu.add_command(label="Palabras Reservadas", command=self.show_reserved_words)
         
-        # Submenú Sintaxis
+        # submenu para mostrar la sintaxis, separada en control de flujo, funciones, operaciones y io
         syntax_menu = Menu(language_menu, tearoff=0)
         language_menu.add_cascade(label="Sintaxis", menu=syntax_menu)
         syntax_menu.add_command(label="Control de Flujo", command=self.show_control_syntax)
@@ -48,25 +60,23 @@ class AuroLangIDE:
         language_menu.add_command(label="Semántica", command=self.show_semantics)
         language_menu.add_command(label="Tipos de Datos", command=self.show_data_types)
         
-        # Menú Ayuda
-        help_menu = Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="Ayuda", menu=help_menu)
-        help_menu.add_command(label="Acerca de", command=self.show_about)
+        # acerca de
+        menubar.add_command(label="Acerca de", command=self.show_about)
         
     def setup_ui(self):
         """Configura la interfaz principal"""
-        # Frame principal
+         
         main_frame = ttk.Frame(self.root)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # Frame superior para botones
+      
         button_frame = ttk.Frame(main_frame)
         button_frame.pack(fill=tk.X, pady=(0, 5))
         
-        # Botones principales
+        
         self.compile_btn = ttk.Button(
             button_frame, 
-            text="🔨 Compilar", 
+            text="Compilar", 
             command=self.compile_code,
             style="Accent.TButton"
         )
@@ -74,36 +84,36 @@ class AuroLangIDE:
         
         self.execute_btn = ttk.Button(
             button_frame, 
-            text="▶️ Ejecutar", 
+            text="Ejecutar", 
             command=self.execute_code,
-            style="Accent.TButton"
+            style="Accent.TButton",
+            state='disabled'   
         )
         self.execute_btn.pack(side=tk.LEFT)
         
-        # Separador
+        # separador
         ttk.Separator(button_frame, orient='vertical').pack(side=tk.LEFT, padx=20, fill=tk.Y)
         
-        # Botones de ayuda rápida
+        
         ttk.Button(button_frame, text="Palabras Reservadas", command=self.show_reserved_words).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text="Sintaxis", command=self.show_control_syntax).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text="Ejemplos", command=self.load_example).pack(side=tk.LEFT, padx=5)
         
-        # PanedWindow principal (divisor horizontal)
+        # paned window para dividir editor y output
         main_paned = ttk.PanedWindow(main_frame, orient=tk.HORIZONTAL)
         main_paned.pack(fill=tk.BOTH, expand=True)
         
-        # Frame izquierdo para el editor
+        # frame izquierdo para editor
         left_frame = ttk.Frame(main_paned)
         main_paned.add(left_frame, weight=3)
-        
-        # Frame derecho para output y errores
+
+        # frame derecho para output y errores
         right_frame = ttk.Frame(main_paned)
         main_paned.add(right_frame, weight=1)
-        
-        # Editor de código
+         
+         #pasamos los frames
         self.setup_code_editor(left_frame)
-        
-        # Panel de salida y errores
+         
         self.setup_output_panel(right_frame)
         
     def setup_code_editor(self, parent):
@@ -120,33 +130,42 @@ class AuroLangIDE:
             editor_container,
             wrap=tk.NONE,
             font=('Consolas', 11),
-            bg='#1e1e1e',
-            fg='#ffffff',
+            bg="#000000",
+            fg="#ffffff",
             insertbackground='#ffffff',
             selectbackground='#264f78',
             selectforeground='#ffffff',
-            tabs=('1c', '2c', '3c', '4c')
+            tabs=('1c', '2c', '3c', '4c') 
         )
         self.code_editor.pack(fill=tk.BOTH, expand=True)
         
         # Texto de ejemplo inicial
-        example_code = '''// Ejemplo de código AuroLang
+        example_code = '''// Ejemplo de código aurum
 func main() -> void {
-    var nombre = read();
-    var edad = 18;
+    print("¡Hola, aurum!")
+    
+    int edad = 25
+    string nombre = "Usuario"
+    
+    print("Tu nombre es: " + nombre)
+    print("Tu edad es: " + edad)
     
     if (edad >= 18) {
-        print("Hola " + nombre + ", eres mayor de edad!");
+        print("Eres mayor de edad")
     } else {
-        print("Hola " + nombre + ", eres menor de edad.");
+        print("Eres menor de edad")
     }
     
-    var resultado = calcular(10, 20);
-    print("El resultado es: " + resultado);
+    int factorial_5 = factorial(5)
+    print("El factorial de 5 es: " + factorial_5)
 }
 
-func calcular(int a, int b) -> int {
-    return a + b;
+func factorial(int n) -> int {
+    if (n <= 1) {
+        return 1
+    } else {
+        return n * factorial(n - 1)
+    }
 }'''
         
         self.code_editor.insert('1.0', example_code)
@@ -154,26 +173,26 @@ func calcular(int a, int b) -> int {
         
     def setup_output_panel(self, parent):
         """Configura el panel de salida y errores"""
-        # Notebook para pestañas
+        # notebook para los tabs
         notebook = ttk.Notebook(parent)
         notebook.pack(fill=tk.BOTH, expand=True)
         
-        # Pestaña de errores
+        # tab para errores
         error_frame = ttk.Frame(notebook)
-        notebook.add(error_frame, text="❌ Errores")
+        notebook.add(error_frame, text="Errores")
         
         self.error_output = scrolledtext.ScrolledText(
             error_frame,
             font=('Consolas', 10),
-            bg='#2d1b1b',
+            bg="#000000",
             fg='#ff6b6b',
             height=15
         )
         self.error_output.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # Pestaña de salida
+        # tab de salida
         output_frame = ttk.Frame(notebook)
-        notebook.add(output_frame, text="📄 Salida")
+        notebook.add(output_frame, text="Salida")
         
         self.program_output = scrolledtext.ScrolledText(
             output_frame,
@@ -184,9 +203,9 @@ func calcular(int a, int b) -> int {
         )
         self.program_output.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # Pestaña de información
+        # tab info
         info_frame = ttk.Frame(notebook)
-        notebook.add(info_frame, text="ℹ️ Info")
+        notebook.add(info_frame, text="Info")
         
         self.info_output = scrolledtext.ScrolledText(
             info_frame,
@@ -197,7 +216,7 @@ func calcular(int a, int b) -> int {
         )
         self.info_output.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # Mostrar información inicial
+        
         self.show_welcome_info()
         
     def setup_bindings(self):
@@ -222,60 +241,170 @@ func calcular(int a, int b) -> int {
         self.current_file = None
         self.code_modified = False
         
+        # Limpiar compilación anterior
+        self.last_compilation = None
+        self.execute_btn.config(state='disabled')
+        
     def open_file(self):
         """Abrir archivo"""
-        from tkinter import filedialog
         file_path = filedialog.askopenfilename(
-            filetypes=[("AuroLang files", "*.auro"), ("All files", "*.*")]
+            filetypes=[("aurum files", "*.auro"), ("Text files", "*.txt"), ("All files", "*.*")]
         )
         if file_path:
-            with open(file_path, 'r', encoding='utf-8') as file:
-                content = file.read()
-                self.code_editor.delete('1.0', tk.END)
-                self.code_editor.insert('1.0', content)
-                self.current_file = file_path
-                self.code_modified = False
+            try:
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    content = file.read()
+                    self.code_editor.delete('1.0', tk.END)
+                    self.code_editor.insert('1.0', content)
+                    self.current_file = file_path
+                    self.code_modified = False
+                    
+                    # Limpiar compilación anterior
+                    self.last_compilation = None
+                    self.execute_btn.config(state='disabled')
+                    
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo abrir el archivo:\n{e}")
                 
     def save_file(self):
         """Guardar archivo"""
         if not self.current_file:
-            from tkinter import filedialog
             self.current_file = filedialog.asksaveasfilename(
                 defaultextension=".auro",
-                filetypes=[("AuroLang files", "*.auro"), ("All files", "*.*")]
+                filetypes=[("aurum files", "*.auro"), ("Text files", "*.txt"), ("All files", "*.*")]
             )
         
         if self.current_file:
-            content = self.code_editor.get('1.0', tk.END)
-            with open(self.current_file, 'w', encoding='utf-8') as file:
-                file.write(content)
-            self.code_modified = False
+            try:
+                content = self.code_editor.get('1.0', tk.END)
+                with open(self.current_file, 'w', encoding='utf-8') as file:
+                    file.write(content)
+                self.code_modified = False
+                messagebox.showinfo("Guardado", f"Archivo guardado como:\n{self.current_file}")
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo guardar el archivo:\n{e}")
             
     def compile_code(self):
         """Compilar el código"""
         self.clear_outputs()
         code = self.code_editor.get('1.0', tk.END)
         
-        self.error_output.insert(tk.END, "🔨 Iniciando compilación...\n")
-        self.error_output.insert(tk.END, f"Líneas de código: {len(code.splitlines())}\n")
-        self.error_output.insert(tk.END, "✅ Análisis léxico: OK\n")
-        self.error_output.insert(tk.END, "✅ Análisis sintáctico: OK\n")
-        self.error_output.insert(tk.END, "✅ Análisis semántico: OK\n")
-        self.error_output.insert(tk.END, "🎉 Compilación exitosa!\n")
+        self.error_output.insert(tk.END, "🔨 Iniciando compilación de aurum...\n\n")
         
-        # TODO: Aquí irá la lógica real de compilación
+        try:
+            # Compilar código usando el compilador real
+            self.compiler.set_verbose(False)  # No mostrar verbose en IDE
+            compilation_result = self.compiler.compile(code)
+            
+            if compilation_result.success:
+                self.last_compilation = compilation_result
+                
+                # Mostrar resultado exitoso
+                self.error_output.insert(tk.END, "✅ COMPILACIÓN EXITOSA\n")
+                self.error_output.insert(tk.END, "=" * 40 + "\n")
+                self.error_output.insert(tk.END, f"📊 Instrucciones generadas: {len(compilation_result.instructions)}\n")
+                self.error_output.insert(tk.END, f"📊 Variables encontradas: {len(compilation_result.variables)}\n")
+                self.error_output.insert(tk.END, f"📊 Funciones definidas: {len(compilation_result.functions)}\n\n")
+                
+                # Mostrar información de análisis
+                self.error_output.insert(tk.END, "🔍 FASES COMPLETADAS:\n")
+                self.error_output.insert(tk.END, "  ✅ Análisis léxico\n")
+                self.error_output.insert(tk.END, "  ✅ Análisis sintáctico\n")
+                self.error_output.insert(tk.END, "  ✅ Análisis semántico\n")
+                self.error_output.insert(tk.END, "  ✅ Generación de código\n\n")
+                
+                self.error_output.insert(tk.END, "🎉 ¡Listo para ejecutar!\n")
+                
+                # Habilitar botón de ejecución
+                self.execute_btn.config(state='normal')
+                
+            else:
+                self.last_compilation = None
+                
+                # Mostrar errores
+                self.error_output.insert(tk.END, "❌ ERRORES DE COMPILACIÓN\n")
+                self.error_output.insert(tk.END, "=" * 40 + "\n")
+                
+                for i, error in enumerate(compilation_result.errors, 1):
+                    self.error_output.insert(tk.END, f"{i}. {error}\n")
+                
+                self.error_output.insert(tk.END, f"\n💡 Se encontraron {len(compilation_result.errors)} errores.\n")
+                self.error_output.insert(tk.END, "Corrige los errores y vuelve a compilar.\n")
+                
+                # Deshabilitar botón de ejecución
+                self.execute_btn.config(state='disabled')
+                
+        except Exception as e:
+            self.error_output.insert(tk.END, f"❌ ERROR INTERNO DEL COMPILADOR:\n")
+            self.error_output.insert(tk.END, f"{str(e)}\n\n")
+            self.error_output.insert(tk.END, "🔧 Detalles técnicos:\n")
+            self.error_output.insert(tk.END, traceback.format_exc())
+            
+            self.last_compilation = None
+            self.execute_btn.config(state='disabled')
         
     def execute_code(self):
         """Ejecutar el código"""
-        self.clear_outputs()
-        code = self.code_editor.get('1.0', tk.END)
+        if not self.last_compilation or not self.last_compilation.success:
+            messagebox.showwarning("Advertencia", "Debes compilar el código exitosamente antes de ejecutarlo.")
+            return
         
-        self.program_output.insert(tk.END, "▶️ Ejecutando programa...\n")
-        self.program_output.insert(tk.END, "Hola mundo, eres mayor de edad!\n")
-        self.program_output.insert(tk.END, "El resultado es: 30\n")
-        self.program_output.insert(tk.END, "✅ Programa ejecutado correctamente.\n")
+        self.clear_output_only()
         
-        # TODO: Aquí irá la lógica real de ejecución
+        self.program_output.insert(tk.END, "🚀 Ejecutando programa aurum...\n")
+        self.program_output.insert(tk.END, "=" * 40 + "\n")
+        
+        try:
+            # Obtener entrada del usuario si es necesaria
+            input_data = self.get_input_data()
+            
+            # Ejecutar programa
+            execution_result = self.compiler.execute(self.last_compilation, input_data)
+            
+            if execution_result.success:
+                # Mostrar salida del programa
+                self.program_output.insert(tk.END, "📄 SALIDA DEL PROGRAMA:\n")
+                self.program_output.insert(tk.END, "-" * 30 + "\n")
+                
+                if execution_result.output:
+                    for line in execution_result.output:
+                        self.program_output.insert(tk.END, f"{line}\n")
+                else:
+                    self.program_output.insert(tk.END, "(Sin salida)\n")
+                
+                self.program_output.insert(tk.END, "\n" + "-" * 30 + "\n")
+                self.program_output.insert(tk.END, f"✅ Programa ejecutado correctamente.\n")
+                self.program_output.insert(tk.END, f"⏱️ Tiempo de ejecución: {execution_result.execution_time:.3f}s\n")
+                
+            else:
+                # Mostrar errores de ejecución
+                self.program_output.insert(tk.END, "❌ ERRORES DE EJECUCIÓN:\n")
+                self.program_output.insert(tk.END, "-" * 30 + "\n")
+                
+                for error in execution_result.errors:
+                    self.program_output.insert(tk.END, f"{error}\n")
+                
+                # Mostrar salida parcial si existe
+                if execution_result.output:
+                    self.program_output.insert(tk.END, "\n📄 SALIDA PARCIAL:\n")
+                    for line in execution_result.output:
+                        self.program_output.insert(tk.END, f"{line}\n")
+                
+        except Exception as e:
+            self.program_output.insert(tk.END, f"❌ ERROR INTERNO DEL INTÉRPRETE:\n")
+            self.program_output.insert(tk.END, f"{str(e)}\n")
+            self.program_output.insert(tk.END, "\n🔧 Detalles técnicos:\n")
+            self.program_output.insert(tk.END, traceback.format_exc())
+    
+    def get_input_data(self):
+        """Obtiene datos de entrada del usuario si son necesarios"""
+        # Por ahora, datos de ejemplo
+        # En el futuro se puede implementar un diálogo para entrada
+        return []
+    
+    def clear_output_only(self):
+        """Limpiar solo la ventana de salida del programa"""
+        self.program_output.delete('1.0', tk.END)
         
     def clear_outputs(self):
         """Limpiar ventanas de salida"""
@@ -284,23 +413,23 @@ func calcular(int a, int b) -> int {
         
     def show_welcome_info(self):
         """Mostrar información de bienvenida"""
-        welcome = """🚀 Bienvenido a AuroLang IDE
+        welcome = """🚀 Bienvenido a aurum IDE
 
-📋 Atajos de teclado:
+  Atajos de teclado:
 • Ctrl+N: Nuevo archivo
 • Ctrl+O: Abrir archivo  
 • Ctrl+S: Guardar archivo
 • F5: Ejecutar código
 • F9: Compilar código
 
-🎯 Características del lenguaje:
+ Características del lenguaje:
 • Tipado estático con inferencia
 • Sintaxis similar a C/Java
 • Funciones con tipos de retorno
 • Estructuras de control completas
 • Tipos simples y compuestos
 
-📚 Usa el menú 'Lenguaje' para ver:
+  Usa el menú 'Lenguaje' para ver:
 • Palabras reservadas
 • Sintaxis completa
 • Semántica del lenguaje
@@ -310,17 +439,19 @@ func calcular(int a, int b) -> int {
         
     def show_reserved_words(self):
         """Mostrar palabras reservadas"""
-        self.show_language_help("Palabras Reservadas", """
-🔤 PALABRAS RESERVADAS DE AUROLANG
+        info = self.compiler.get_language_info()
+        
+        content = f"""
+ PALABRAS RESERVADAS DE aurum
 
 Control de flujo:
-  if, else, elif, while, for, in, break, continue
+  if, else, elif, while, for, break, continue
 
 Tipos de datos:
-  int, float, char, bool, null, array, list
+  {', '.join(info['data_types']['simple'])}
 
 Funciones:
-  func, return, void
+  func, return, void, main
 
 Operadores lógicos:
   and, or, not
@@ -328,17 +459,19 @@ Operadores lógicos:
 Entrada/Salida:
   read, write, print
 
-Declaración:
-  var, const
-
 Valores literales:
   true, false
-""")
+
+🚀 Total de palabras reservadas: {len(info['keywords'])}
+
+Todas las palabras: {', '.join(info['keywords'])}
+"""
+        self.show_language_help("Palabras Reservadas", content)
         
     def show_control_syntax(self):
         """Mostrar sintaxis de control"""
         self.show_language_help("Sintaxis - Control de Flujo", """
-🔄 ESTRUCTURAS DE CONTROL
+  ESTRUCTURAS DE CONTROL
 
 Condicional simple:
   if (condicion) {
@@ -402,7 +535,7 @@ Ejemplos:
     def show_operations_syntax(self):
         """Mostrar sintaxis de operaciones"""
         self.show_language_help("Sintaxis - Operaciones", """
-🧮 OPERADORES
+  OPERADORES
 
 Aritméticos:
   +    suma
@@ -435,7 +568,7 @@ Ejemplos:
     def show_io_syntax(self):
         """Mostrar sintaxis de entrada/salida"""
         self.show_language_help("Sintaxis - Entrada/Salida", """
-📝 ENTRADA Y SALIDA DE DATOS
+  ENTRADA Y SALIDA DE DATOS
 
 Lectura desde teclado:
   var nombre = read();
@@ -457,7 +590,7 @@ Ejemplos:
     def show_semantics(self):
         """Mostrar semántica del lenguaje"""
         self.show_language_help("Semántica del Lenguaje", """
-📖 REGLAS SEMÁNTICAS
+  REGLAS SEMÁNTICAS
 
 Estructura del programa:
   • Función main() obligatoria
@@ -484,7 +617,7 @@ Reglas de tipos:
     def show_data_types(self):
         """Mostrar tipos de datos"""
         self.show_language_help("Tipos de Datos", """
-📊 TIPOS DE DATOS
+ TIPOS DE DATOS
 
 TIPOS SIMPLES:
   int     - Números enteros (-123, 0, 456)
@@ -514,7 +647,7 @@ EJEMPLOS DE USO:
         """Mostrar ayuda del lenguaje e insertar código"""
         # Mostrar ventana de ayuda
         help_window = tk.Toplevel(self.root)
-        help_window.title(f"AuroLang - {title}")
+        help_window.title(f"aurum - {title}")
         help_window.geometry("600x500")
         help_window.configure(bg='#2b2b2b')
         
@@ -563,53 +696,95 @@ EJEMPLOS DE USO:
             
     def load_example(self):
         """Cargar código de ejemplo"""
-        example_code = '''// Ejemplo completo de AuroLang
+        example_code = '''// Ejemplo completo de aurum - Calculadora
 func main() -> void {
-    print("=== Calculadora Simple ===");
+    print("=== CALCULADORA aurum ===")
     
-    var a = read();
-    var b = read();
-    var operacion = read();
+    int a = 15
+    int b = 8
     
-    if (operacion == "+") {
-        var resultado = sumar(a, b);
-        print("Resultado: " + resultado);
-    } elif (operacion == "-") {
-        var resultado = restar(a, b);
-        print("Resultado: " + resultado);
+    print("Número A: " + a)
+    print("Número B: " + b)
+    print("")
+    
+    // Operaciones básicas
+    int suma = a + b
+    int resta = a - b
+    int multiplicacion = a * b
+    int division = a / b
+    
+    print("Suma: " + a + " + " + b + " = " + suma)
+    print("Resta: " + a + " - " + b + " = " + resta)
+    print("Multiplicación: " + a + " * " + b + " = " + multiplicacion)
+    print("División: " + a + " / " + b + " = " + division)
+    print("")
+    
+    // Condicionales
+    if (suma > 20) {
+        print("La suma es mayor a 20")
     } else {
-        print("Operación no válida");
+        print("La suma es menor o igual a 20")
+    }
+    
+    // Función recursiva
+    int factorial_a = factorial(5)
+    print("Factorial de 5: " + factorial_a)
+    
+    // Ciclo
+    print("Contando del 1 al 5:")
+    for (int i = 1; i <= 5; i = i + 1) {
+        print("Número: " + i)
     }
 }
 
-func sumar(int x, int y) -> int {
-    return x + y;
-}
-
-func restar(int x, int y) -> int {
-    return x - y;
+func factorial(int n) -> int {
+    if (n <= 1) {
+        return 1
+    } else {
+        return n * factorial(n - 1)
+    }
 }'''
         
-        if messagebox.askyesno("Cargar Ejemplo", "¿Desea reemplazar el código actual con un ejemplo?"):
+        if messagebox.askyesno("Cargar Ejemplo", "¿Desea reemplazar el código actual con un ejemplo completo?"):
             self.code_editor.delete('1.0', tk.END)
             self.code_editor.insert('1.0', example_code)
             
+            # Limpiar compilación anterior
+            self.last_compilation = None
+            self.execute_btn.config(state='disabled')
+            
     def show_about(self):
         """Mostrar información sobre el IDE"""
-        messagebox.showinfo("Acerca de", 
-            "AuroLang IDE v1.0\n\n"
-            "Compilador e Intérprete para el lenguaje AuroLang\n"
-            "Desarrollado como proyecto académico\n\n"
-            "Características:\n"
-            "• Editor de código con resaltado\n"
-            "• Compilación y ejecución\n"
-            "• Detección de errores\n"
-            "• Documentación integrada")
+        info = self.compiler.get_language_info()
+        
+        about_text = f"""aurum IDE v1.0
+
+{info['description']}
+
+  Características del Compilador:
+• Análisis léxico completo
+• Análisis sintáctico con AST
+• Análisis semántico con verificación de tipos
+• Generación de código intermedio
+• Intérprete de máquina virtual
+
+  Características del Lenguaje:
+• {', '.join(info['features'])}
+
+  Tipos de datos: {', '.join(info['data_types']['simple'])}
+  Total de palabras reservadas: {len(info['keywords'])}
+  Operadores soportados: {len(info['operators']['arithmetic']) + len(info['operators']['comparison']) + len(info['operators']['logical'])}
+
+Desarrollado como proyecto académico
+Universidad Nacional - Sede Regional Brunca
+Paradigmas de Programación"""
+        
+        messagebox.showinfo("Acerca de aurum", about_text)
             
     def run(self):
         """Ejecutar el IDE"""
         self.root.mainloop()
 
 if __name__ == "__main__":
-    ide = AuroLangIDE()
+    ide = AurumIDE()
     ide.run()
