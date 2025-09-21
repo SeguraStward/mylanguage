@@ -2,22 +2,22 @@
 """
 Alchemist IDE - Círculo de Transmutación Supremo
 IDE épico inspirado en Fullmetal Alchemist Brotherhood
-Con estilo alquímico en blanco y negro + modos oscuro/claro
+Con estilo alquímico transparente y imagen de fondo automática
 """
 
 import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox, filedialog, Menu
-from PIL import Image, ImageTk
 import os
+from PIL import Image, ImageTk
 from .lexer import AlchemistLexer
 from .parser import AlchemistParser
 
 class AlchemistIDE:
-    """IDE épico para el lenguaje Alchemist con estilo alquímico"""
+    """IDE épico para el lenguaje Alchemist con estilo alquímico transparente"""
     
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Alchemist IDE - Círculo de Transmutación Supremo")
+        self.root.title("Alchemist")
         self.root.geometry("1400x900")
         
         # Variables para el estado del IDE
@@ -26,6 +26,11 @@ class AlchemistIDE:
         self.dark_mode = True  # Modo por defecto
         self.bg_image = None
         self.bg_photo = None
+        self.canvas_photo = None  # Para imagen redimensionada del canvas
+        self.editor_bg_photo = None  # Para imagen compuesta del editor
+        self.main_bg_label = None
+        self.editor_bg_label = None  # Para imagen del editor
+        self.canvas_bg_image = None  # Para imagen en canvas
         
         # Configurar estilos
         self.setup_styles()
@@ -35,65 +40,158 @@ class AlchemistIDE:
         self.setup_ui()
         self.setup_bindings()
         
+        # Cargar imagen de fondo después de crear la UI
+        self.load_theme_background()
+        
     def setup_styles(self):
-        """Configura los estilos según el modo"""
+        """Configura los estilos según el modo con transparencias"""
         if self.dark_mode:
             self.colors = {
-                'bg_primary': '#000000',     # Negro principal
-                'bg_secondary': '#1a1a1a',   # Negro secundario
-                'bg_accent': '#333333',      # Gris oscuro
-                'fg_primary': '#ffffff',     # Blanco principal
-                'fg_secondary': '#cccccc',   # Gris claro
-                'fg_accent': '#888888',      # Gris medio
-                'select_bg': '#444444',      # Selección
-                'select_fg': '#ffffff',      # Texto seleccionado
-                'button_bg': '#2a2a2a',      # Botones
-                'button_fg': '#ffffff',      # Texto botones
-                'button_active': '#404040'   # Botones activos
+                'bg_primary': '#000000',        # Negro para modo oscuro
+                'bg_transparent': '#000000',    # Fondo transparente
+                'fg_primary': '#ffffff',        # Texto blanco
+                'fg_secondary': '#cccccc',      # Gris claro
+                'border_subtle': '#333333',     # Bordes apenas visibles
+                'button_bg': '#1a1a1a',        # Botones visibles
+                'button_fg': '#ffffff',
+                'button_active': '#2a2a2a',
+                'select_bg': '#333333',
+                'select_fg': '#ffffff'
             }
         else:
             self.colors = {
-                'bg_primary': '#ffffff',     # Blanco principal
-                'bg_secondary': '#f0f0f0',   # Gris muy claro
-                'bg_accent': '#e0e0e0',      # Gris claro
-                'fg_primary': '#000000',     # Negro principal
-                'fg_secondary': '#333333',   # Gris oscuro
-                'fg_accent': '#666666',      # Gris medio
-                'select_bg': '#cccccc',      # Selección
-                'select_fg': '#000000',      # Texto seleccionado
-                'button_bg': '#d0d0d0',      # Botones
-                'button_fg': '#000000',      # Texto botones
-                'button_active': '#c0c0c0'   # Botones activos
+                'bg_primary': '#ffffff',        # Blanco para modo claro
+                'bg_transparent': '#ffffff',    # Fondo transparente
+                'fg_primary': '#000000',        # Texto negro
+                'fg_secondary': '#333333',      # Gris oscuro
+                'border_subtle': '#cccccc',     # Bordes apenas visibles
+                'button_bg': '#e0e0e0',        # Botones visibles
+                'button_fg': '#000000',
+                'button_active': '#d0d0d0',
+                'select_bg': '#cccccc',
+                'select_fg': '#000000'
             }
         
         self.root.configure(bg=self.colors['bg_primary'])
         
+    def load_theme_background(self):
+        """Cargar imagen de fondo según el tema actual"""
+        try:
+            # Nombre de archivo según el modo (exactamente como los tienes)
+            filename = 'BLACK.jpeg' if self.dark_mode else 'WHITE.jpeg'
+            
+            # Obtener directorio actual (src/)
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.dirname(current_dir)  # Subir un nivel desde src/
+            
+            # Posibles ubicaciones de la imagen (buscar primero en src/)
+            possible_paths = [
+                # En el directorio src/ (donde están realmente)
+                os.path.join(current_dir, filename),
+                # En la raíz del proyecto
+                os.path.join(project_root, filename),
+                # En el directorio actual de trabajo
+                os.path.join(os.getcwd(), filename),
+                # También buscar versiones en minúsculas
+                os.path.join(current_dir, filename.lower()),
+                os.path.join(project_root, filename.lower())
+            ]
+            
+            image_path = None
+            for path in possible_paths:
+                print(f"🔍 Buscando: {path}")
+                if os.path.exists(path):
+                    image_path = path
+                    print(f"✅ IMAGEN ENCONTRADA: {path}")
+                    break
+            
+            if image_path:
+                # Cargar y redimensionar imagen
+                image = Image.open(image_path)
+                # Redimensionar para que cubra la ventana pero mantenga proporción
+                image = image.resize((700, 500), Image.Resampling.LANCZOS)
+                self.bg_photo = ImageTk.PhotoImage(image)
+                
+                # Aplicar imagen de fondo principal
+                self.apply_main_background()
+                # Aplicar imagen específicamente al editor si ya existe
+                if hasattr(self, 'editor_container'):
+                    self.apply_editor_background()
+                print(f"🎉 Imagen aplicada correctamente: {filename}")
+            else:
+                print(f"❌ NO SE ENCONTRÓ: {filename}")
+                print("Ubicaciones buscadas:")
+                for path in possible_paths:
+                    print(f"  - {path}")
+                
+        except Exception as e:
+            print(f"❌ Error cargando imagen de fondo: {e}")
+    
+    def apply_main_background(self):
+        """Aplicar imagen de fondo principal centrada"""
+        if self.bg_photo:
+            # Eliminar imagen anterior si existe
+            if self.main_bg_label:
+                self.main_bg_label.destroy()
+            
+            # Crear label de fondo principal
+            self.main_bg_label = tk.Label(
+                self.root,
+                image=self.bg_photo,
+                bg=self.colors['bg_primary']
+            )
+            # Centrar la imagen en toda la ventana
+            self.main_bg_label.place(relx=0.5, rely=0.5, anchor='center')
+            # Enviar al fondo
+            self.main_bg_label.lower()
+            
     def setup_menu(self):
-        """Configura el menú principal con estilo alquímico"""
-        menubar = Menu(self.root, bg=self.colors['bg_secondary'], fg=self.colors['fg_primary'], 
-                      activebackground=self.colors['button_active'])
+        """Configura el menú principal transparente"""
+        menubar = Menu(
+            self.root, 
+            bg=self.colors['bg_transparent'], 
+            fg=self.colors['fg_primary'],
+            activebackground=self.colors['button_active'],
+            relief=tk.FLAT,
+            bd=0
+        )
         self.root.config(menu=menubar)
         
         # Menú Archivo
-        file_menu = Menu(menubar, tearoff=0, bg=self.colors['bg_secondary'], fg=self.colors['fg_primary'])
+        file_menu = Menu(
+            menubar, 
+            tearoff=0, 
+            bg=self.colors['bg_transparent'], 
+            fg=self.colors['fg_primary'],
+            relief=tk.FLAT
+        )
         menubar.add_cascade(label="Archivo", menu=file_menu)
         file_menu.add_command(label="Nuevo", command=self.new_file, accelerator="Ctrl+N")
         file_menu.add_command(label="Abrir", command=self.open_file, accelerator="Ctrl+O")
         file_menu.add_command(label="Guardar", command=self.save_file, accelerator="Ctrl+S")
         file_menu.add_separator()
-        file_menu.add_command(label="Cargar Imagen de Fondo", command=self.load_background_image)
-        file_menu.add_command(label="Quitar Imagen de Fondo", command=self.remove_background_image)
-        file_menu.add_separator()
         file_menu.add_command(label="Salir", command=self.root.quit)
         
         # Menú Herramientas
-        tools_menu = Menu(menubar, tearoff=0, bg=self.colors['bg_secondary'], fg=self.colors['fg_primary'])
+        tools_menu = Menu(
+            menubar, 
+            tearoff=0, 
+            bg=self.colors['bg_transparent'], 
+            fg=self.colors['fg_primary'],
+            relief=tk.FLAT
+        )
         menubar.add_cascade(label="Herramientas", menu=tools_menu)
         tools_menu.add_command(label="Analizar Elementos", command=self.test_lexer)
         tools_menu.add_command(label="Verificar Estructura", command=self.test_parser)
         
         # Menú Apariencia
-        view_menu = Menu(menubar, tearoff=0, bg=self.colors['bg_secondary'], fg=self.colors['fg_primary'])
+        view_menu = Menu(
+            menubar, 
+            tearoff=0, 
+            bg=self.colors['bg_transparent'], 
+            fg=self.colors['fg_primary'],
+            relief=tk.FLAT
+        )
         menubar.add_cascade(label="Apariencia", menu=view_menu)
         view_menu.add_command(label="Modo Oscuro", command=lambda: self.toggle_theme(True))
         view_menu.add_command(label="Modo Claro", command=lambda: self.toggle_theme(False))
@@ -102,42 +200,86 @@ class AlchemistIDE:
         menubar.add_command(label="Acerca de", command=self.show_about)
         
     def setup_ui(self):
-        """Configura la interfaz principal con estilo alquímico"""
-        # Frame principal
-        main_frame = tk.Frame(self.root, bg=self.colors['bg_primary'])
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        """Configura la interfaz principal transparente"""
+        # Frame principal transparente
+        main_frame = tk.Frame(
+            self.root, 
+            bg=self.colors['bg_transparent'],
+            relief=tk.FLAT,
+            bd=0
+        )
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
         
-        # Título del IDE
-        title_frame = tk.Frame(main_frame, bg=self.colors['bg_accent'], relief=tk.RAISED, bd=3)
-        title_frame.pack(fill=tk.X, pady=(0, 10))
-         
+        # Título del IDE - semi-transparente
+        title_frame = tk.Frame(
+            main_frame, 
+            bg=self.colors['bg_transparent'], 
+            relief=tk.FLAT,
+            bd=1,
+            highlightbackground=self.colors['border_subtle'],
+            highlightthickness=1
+        )
+        title_frame.pack(fill=tk.X, pady=(0, 8))
+        
+        title_label = tk.Label(
+            title_frame,
+            text="ALCHEMIST IDE",
+            font=('Arial', 16, 'bold'),
+            bg=self.colors['bg_transparent'],
+            fg=self.colors['fg_primary'],
+            pady=8
+        )
+        title_label.pack()
+        
+        subtitle_label = tk.Label(
+            title_frame,
+            text="Para obtener algo, algo de igual valor debe ser perdido",
+            font=('Arial', 10, 'italic'),
+            bg=self.colors['bg_transparent'],
+            fg=self.colors['fg_secondary']
+        )
+        subtitle_label.pack()
+        
+        # Panel de botones (visible)
         self.setup_button_panel(main_frame)
         
-        # Panel principal dividido
-        main_paned = tk.PanedWindow(main_frame, orient=tk.HORIZONTAL, bg=self.colors['bg_primary'], 
-                                   sashwidth=6, sashrelief=tk.RAISED)
+        # Panel principal dividido - transparente
+        main_paned = tk.PanedWindow(
+            main_frame, 
+            orient=tk.HORIZONTAL, 
+            bg=self.colors['bg_transparent'],
+            sashwidth=3,
+            sashrelief=tk.FLAT,
+            relief=tk.FLAT,
+            bd=0
+        )
         main_paned.pack(fill=tk.BOTH, expand=True)
         
-        # Frame izquierdo para editor
-        left_frame = tk.Frame(main_paned, bg=self.colors['bg_primary'])
+        # Frame izquierdo transparente
+        left_frame = tk.Frame(main_paned, bg=self.colors['bg_transparent'])
         main_paned.add(left_frame, width=800)
         
-        # Frame derecho para output
-        right_frame = tk.Frame(main_paned, bg=self.colors['bg_primary'])
+        # Frame derecho transparente
+        right_frame = tk.Frame(main_paned, bg=self.colors['bg_transparent'])
         main_paned.add(right_frame, width=600)
         
         self.setup_code_editor(left_frame)
         self.setup_output_panel(right_frame)
         
     def setup_button_panel(self, parent):
-        """Configura el panel de botones (versión compacta)"""
-        button_frame = tk.Frame(parent, bg=self.colors['bg_secondary'], relief=tk.RIDGE, bd=2)
-        button_frame.pack(fill=tk.X, pady=(0, 3))
+        """Configura el panel de botones (visibles pero compactos)"""
+        button_frame = tk.Frame(
+            parent, 
+            bg=self.colors['button_bg'], 
+            relief=tk.RIDGE, 
+            bd=2
+        )
+        button_frame.pack(fill=tk.X, pady=(0, 8))
         
-        # Botones principales - más compactos
+        # Botones principales - compactos pero visibles
         tk.Button(
             button_frame,
-            text="Analizar Elementos",
+            text="Analizar",
             command=self.test_lexer,
             font=('Arial', 9, 'bold'),
             bg=self.colors['button_bg'],
@@ -146,13 +288,13 @@ class AlchemistIDE:
             activeforeground=self.colors['fg_primary'],
             relief=tk.RAISED,
             bd=2,
-            padx=12,
-            pady=3
-        ).pack(side=tk.LEFT, padx=4, pady=4)
+            padx=10,
+            pady=2
+        ).pack(side=tk.LEFT, padx=3, pady=3)
         
         tk.Button(
             button_frame,
-            text="Verificar Estructura",
+            text="Verificar",
             command=self.test_parser,
             font=('Arial', 9, 'bold'),
             bg=self.colors['button_bg'],
@@ -161,101 +303,130 @@ class AlchemistIDE:
             activeforeground=self.colors['fg_primary'],
             relief=tk.RAISED,
             bd=2,
-            padx=12,
-            pady=3
-        ).pack(side=tk.LEFT, padx=4, pady=4)
+            padx=10,
+            pady=2
+        ).pack(side=tk.LEFT, padx=3, pady=3)
         
-        # Separador más pequeño
-        separator = tk.Frame(button_frame, width=2, bg=self.colors['fg_accent'])
-        separator.pack(side=tk.LEFT, fill=tk.Y, padx=8, pady=4)
+        # Separador sutil
+        separator = tk.Frame(button_frame, width=2, bg=self.colors['border_subtle'])
+        separator.pack(side=tk.LEFT, fill=tk.Y, padx=6, pady=3)
         
-        # Botones de ayuda - más compactos
+        # Botones de ayuda
         tk.Button(
             button_frame,
-            text="Palabras Reservadas",
+            text="Palabras",
             command=self.show_reserved_words,
             font=('Arial', 9, 'bold'),
-            bg=self.colors['bg_accent'],
-            fg=self.colors['fg_primary'],
+            bg=self.colors['button_bg'],
+            fg=self.colors['button_fg'],
             activebackground=self.colors['button_active'],
             activeforeground=self.colors['fg_primary'],
             relief=tk.RAISED,
             bd=2,
-            padx=12,
-            pady=3
-        ).pack(side=tk.LEFT, padx=4, pady=4)
+            padx=10,
+            pady=2
+        ).pack(side=tk.LEFT, padx=3, pady=3)
         
         tk.Button(
             button_frame,
             text="Sintaxis",
             command=self.show_control_syntax,
             font=('Arial', 9, 'bold'),
-            bg=self.colors['bg_accent'],
-            fg=self.colors['fg_primary'],
+            bg=self.colors['button_bg'],
+            fg=self.colors['button_fg'],
             activebackground=self.colors['button_active'],
             activeforeground=self.colors['fg_primary'],
             relief=tk.RAISED,
             bd=2,
-            padx=12,
-            pady=3
-        ).pack(side=tk.LEFT, padx=4, pady=4)
+            padx=10,
+            pady=2
+        ).pack(side=tk.LEFT, padx=3, pady=3)
         
         tk.Button(
             button_frame,
             text="Ejemplos",
             command=self.load_example,
             font=('Arial', 9, 'bold'),
-            bg=self.colors['bg_accent'],
-            fg=self.colors['fg_primary'],
+            bg=self.colors['button_bg'],
+            fg=self.colors['button_fg'],
             activebackground=self.colors['button_active'],
             activeforeground=self.colors['fg_primary'],
             relief=tk.RAISED,
             bd=2,
-            padx=12,
-            pady=3
-        ).pack(side=tk.LEFT, padx=4, pady=4)
+            padx=10,
+            pady=2
+        ).pack(side=tk.LEFT, padx=3, pady=3)
         
     def setup_code_editor(self, parent):
-        """Configura el editor de código con soporte para imagen de fondo centrada"""
-        # Marco del editor
+        """Configura el editor de código con imagen de fondo visible - NUEVA ESTRATEGIA"""
+        # Marco del editor - completamente transparente
         editor_frame = tk.LabelFrame(
             parent,
             text="Editor de Código",
-            font=('Arial', 10, 'bold'),  # Fuente más pequeña
-            bg=self.colors['bg_secondary'],
+            font=('Arial', 10, 'bold'),
+            bg=self.colors['bg_primary'],
             fg=self.colors['fg_primary'],
-            relief=tk.RIDGE,
-            bd=3
+            relief=tk.FLAT,
+            bd=1
         )
         editor_frame.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
         
-        # Frame para imagen de fondo
-        self.editor_bg_frame = tk.Frame(editor_frame, bg=self.colors['bg_primary'])
-        self.editor_bg_frame.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
-        
-        # Editor de texto con fuente más pequeña
-        self.code_editor = scrolledtext.ScrolledText(
-            self.editor_bg_frame,
-            wrap=tk.NONE,
-            font=('Consolas', 10),  # Fuente más pequeña
+        # NUEVA ESTRATEGIA: Canvas con imagen de fondo y text widget encima
+        self.editor_canvas = tk.Canvas(
+            editor_frame,
             bg=self.colors['bg_primary'],
+            highlightthickness=0,
+            relief=tk.FLAT,
+            bd=0
+        )
+        self.editor_canvas.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
+        
+        # Frame para el texto que va encima del canvas
+        self.editor_container = tk.Frame(self.editor_canvas, bg=self.colors['bg_primary'])
+        
+        # Crear window en canvas para el frame
+        self.canvas_window = self.editor_canvas.create_window(
+            0, 0, anchor="nw", window=self.editor_container
+        )
+        
+        # Editor de texto con fondo que permite ver a través
+        self.code_editor = scrolledtext.ScrolledText(
+            self.editor_container,
+            wrap=tk.NONE,
+            font=('Consolas', 10),
+            bg=self.colors['bg_primary'],  # Mismo color que el canvas
             fg=self.colors['fg_primary'],
             insertbackground=self.colors['fg_primary'],
             selectbackground=self.colors['select_bg'],
             selectforeground=self.colors['select_fg'],
-            relief=tk.SUNKEN,
-            bd=3
+            relief=tk.FLAT,
+            bd=0,
+            highlightthickness=0
         )
         self.code_editor.pack(fill=tk.BOTH, expand=True)
         
-        # Código inicial más compacto
-        initial_code = """// BIENVENIDO AL CÍRCULO DE TRANSMUTACIÓN SUPREMO
-// Inspirado en Fullmetal Alchemist Brotherhood
+        # Configurar el canvas para que se redimensione con el contenido
+        def configure_canvas(event=None):
+            # Actualizar el tamaño del frame en el canvas
+            self.editor_canvas.configure(scrollregion=self.editor_canvas.bbox("all"))
+            # Hacer que el frame del editor ocupe todo el canvas
+            canvas_width = self.editor_canvas.winfo_width()
+            canvas_height = self.editor_canvas.winfo_height()
+            self.editor_canvas.itemconfig(self.canvas_window, width=canvas_width, height=canvas_height)
+        
+        self.editor_canvas.bind('<Configure>', configure_canvas)
+        self.editor_container.bind('<Configure>', configure_canvas)
+        
+        # Aplicar imagen de fondo al canvas después de que se configure
+        self.root.after(100, self.apply_canvas_background)
+        
+        # Código inicial
+        initial_code = """// CÍRCULO DE TRANSMUTACIÓN SUPREMO
+// Fullmetal Alchemist Brotherhood
 
 Transmutation GateOfTruth() -> void {
-    Transmute("CÍRCULO DE TRANSMUTACIÓN ACTIVADO")
+    Transmute("ACTIVANDO CÍRCULO ALQUÍMICO")
     
-    // Variables alquímicas básicas
     Inscription alquimista = "Edward Elric"
     Solid edad = 16
     Principle esAlquimista = Accepted
@@ -263,13 +434,11 @@ Transmutation GateOfTruth() -> void {
     Transmute("Alquimista: " + alquimista)
     Transmute("Edad: " + edad + " años")
     
-    // Observación de condiciones
     Observe (edad >= 15 and esAlquimista == Accepted) {
-        Transmute("ACCESO CONCEDIDO AL ARTE SAGRADO")
+        Transmute("ACCESO CONCEDIDO")
         
-        // Ciclo alquímico
-        AlchemicCycle (Solid circulo = 1; circulo <= 3; circulo = circulo + 1) {
-            Transmute("Círculo " + circulo + " ACTIVADO")
+        AlchemicCycle (Solid i = 1; i <= 3; i = i + 1) {
+            Transmute("Círculo " + i + " ACTIVADO")
         }
     } Inevitably {
         Transmute("ACCESO DENEGADO")
@@ -277,110 +446,239 @@ Transmutation GateOfTruth() -> void {
     
     Transmute("INTERCAMBIO EQUIVALENTE COMPLETADO")
 }"""
-    
+        
         self.code_editor.insert('1.0', initial_code)
         
-    def setup_output_panel(self, parent):
-        """Configura el panel de salida con soporte para imagen de fondo"""
-        # Notebook para tabs
-        self.notebook = ttk.Notebook(parent)
-        self.notebook.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
-        
-        # Configurar estilo del notebook
-        style = ttk.Style()
-        if self.dark_mode:
-            style.configure('TNotebook', background=self.colors['bg_secondary'])
-            style.configure('TNotebook.Tab', background=self.colors['bg_accent'], 
-                          foreground=self.colors['fg_primary'])
+    def apply_canvas_background(self):
+        """Aplicar imagen de fondo al canvas del editor"""
+        if hasattr(self, 'bg_photo') and self.bg_photo and hasattr(self, 'editor_canvas'):
+            try:
+                # Eliminar imagen anterior si existe
+                if hasattr(self, 'canvas_bg_image'):
+                    self.editor_canvas.delete(self.canvas_bg_image)
+                
+                # Obtener dimensiones del canvas
+                self.editor_canvas.update_idletasks()
+                canvas_width = self.editor_canvas.winfo_width()
+                canvas_height = self.editor_canvas.winfo_height()
+                
+                if canvas_width > 1 and canvas_height > 1:  # Asegurar que el canvas tiene dimensiones válidas
+                    # Redimensionar imagen para ajustarse al canvas
+                    filename = 'BLACK.jpeg' if self.dark_mode else 'WHITE.jpeg'
+                    image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
+                    
+                    # Cargar y redimensionar imagen
+                    pil_image = Image.open(image_path)
+                    resized_image = pil_image.resize((canvas_width, canvas_height), Image.Resampling.LANCZOS)
+                    self.canvas_photo = ImageTk.PhotoImage(resized_image)
+                    
+                    # Crear imagen de fondo en el canvas centrada
+                    self.canvas_bg_image = self.editor_canvas.create_image(
+                        canvas_width // 2, canvas_height // 2, 
+                        image=self.canvas_photo
+                    )
+                    
+                    # Asegurar que la imagen esté en el fondo
+                    self.editor_canvas.tag_lower(self.canvas_bg_image)
+                    
+                    print(f"🎨 Imagen {filename} aplicada al canvas ({canvas_width}x{canvas_height})")
+                    
+                    # Hacer el frame del editor transparente
+                    if hasattr(self, 'editor_container'):
+                        self.editor_container.configure(bg='')  # Transparente
+                    
+                    # Configurar el text widget para máxima transparencia
+                    if hasattr(self, 'code_editor'):
+                        # Usar colores que contrasten bien con la imagen de fondo
+                        if self.dark_mode:
+                            text_bg = '#2a2a2a'  # Gris muy oscuro, semi-transparente
+                            text_fg = '#ffffff'
+                        else:
+                            text_bg = '#e8e8e8'  # Gris muy claro, semi-transparente
+                            text_fg = '#000000'
+                        
+                        self.code_editor.configure(
+                            bg=text_bg,
+                            fg=text_fg,
+                            insertbackground=text_fg,
+                            selectbackground='#4a4a4a' if self.dark_mode else '#cccccc',
+                            selectforeground=text_fg
+                        )
+                        
+                        print(f"🖌️ Editor configurado con fondo {text_bg}")
+                
+            except Exception as e:
+                print(f"❌ Error aplicando imagen al canvas: {e}")
+                import traceback
+                traceback.print_exc()
+
+    def apply_editor_background(self):
+        """Aplicar imagen de fondo específicamente al editor de código - NUEVA VERSIÓN"""
+        # Esta función ahora llama a apply_canvas_background
+        if hasattr(self, 'editor_canvas'):
+            self.apply_canvas_background()
         else:
-            style.configure('TNotebook', background=self.colors['bg_secondary'])
-            style.configure('TNotebook.Tab', background=self.colors['bg_accent'], 
-                          foreground=self.colors['fg_primary'])
+            print("⚠️ Canvas del editor no está listo aún")
+            if self.dark_mode:
+                # En modo oscuro, usar gris muy oscuro semi-transparente
+                editor_bg = '#1a1a1a'  # Gris muy oscuro en lugar de negro
+            else:
+                # En modo claro, usar gris muy claro semi-transparente  
+                editor_bg = '#f8f8f8'  # Gris muy claro en lugar de blanco puro
+                
+            self.code_editor.configure(bg=editor_bg)
         
-        # Tab de errores
-        error_frame = tk.Frame(self.notebook, bg=self.colors['bg_secondary'])
+    def setup_output_panel(self, parent):
+        """Configura el panel de salida transparente"""
+        # Notebook transparente
+        style = ttk.Style()
+        style.theme_use('clam')
+        style.configure('Transparent.TNotebook', 
+                       background=self.colors['bg_transparent'],
+                       borderwidth=0)
+        style.configure('Transparent.TNotebook.Tab', 
+                       background=self.colors['bg_transparent'],
+                       foreground=self.colors['fg_primary'],
+                       padding=[12, 8])
+        
+        self.notebook = ttk.Notebook(parent, style='Transparent.TNotebook')
+        self.notebook.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
+        
+        # Tab de errores - transparente
+        error_frame = tk.Frame(
+            self.notebook, 
+            bg=self.colors['bg_transparent'],
+            relief=tk.FLAT,
+            bd=1,
+            highlightbackground=self.colors['border_subtle'],
+            highlightthickness=1
+        )
         self.notebook.add(error_frame, text="Errores")
         
-        error_label = tk.Label(
-            error_frame,
-            text="Análisis de Errores",
-            font=('Arial', 12, 'bold'),
-            bg=self.colors['bg_secondary'],
-            fg=self.colors['fg_primary']
-        )
-        error_label.pack(anchor=tk.W, padx=8, pady=8)
-        
-        # Frame para imagen de fondo de errores
-        self.error_bg_frame = tk.Frame(error_frame, bg=self.colors['bg_primary'])
-        self.error_bg_frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
-        
         self.error_output = scrolledtext.ScrolledText(
-            self.error_bg_frame,
-            font=('Consolas', 9),  # Fuente más pequeña
-            bg=self.colors['bg_primary'],
+            error_frame,
+            font=('Consolas', 9),
+            bg=self.colors['bg_transparent'],
             fg=self.colors['fg_secondary'],
-            relief=tk.SUNKEN,
-            bd=3
+            relief=tk.FLAT,
+            bd=0,
+            highlightthickness=1,
+            highlightcolor=self.colors['border_subtle'],
+            highlightbackground=self.colors['border_subtle']
         )
-        self.error_output.pack(fill=tk.BOTH, expand=True)
+        self.error_output.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
         
-        # Tab de resultados
-        output_frame = tk.Frame(self.notebook, bg=self.colors['bg_secondary'])
+        # Tab de salida - transparente
+        output_frame = tk.Frame(
+            self.notebook, 
+            bg=self.colors['bg_transparent'],
+            relief=tk.FLAT,
+            bd=1,
+            highlightbackground=self.colors['border_subtle'],
+            highlightthickness=1
+        )
         self.notebook.add(output_frame, text="Salida")
         
-        output_label = tk.Label(
-            output_frame,
-            text="Resultados de Análisis",
-            font=('Arial', 12, 'bold'),
-            bg=self.colors['bg_secondary'],
-            fg=self.colors['fg_primary']
-        )
-        output_label.pack(anchor=tk.W, padx=8, pady=8)
-        
-        # Frame para imagen de fondo de salida
-        self.output_bg_frame = tk.Frame(output_frame, bg=self.colors['bg_primary'])
-        self.output_bg_frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
-        
         self.program_output = scrolledtext.ScrolledText(
-            self.output_bg_frame,
-            font=('Consolas', 9),  # Fuente más pequeña
-            bg=self.colors['bg_primary'],
+            output_frame,
+            font=('Consolas', 9),
+            bg=self.colors['bg_transparent'],
             fg=self.colors['fg_primary'],
-            relief=tk.SUNKEN,
-            bd=3
+            relief=tk.FLAT,
+            bd=0,
+            highlightthickness=1,
+            highlightcolor=self.colors['border_subtle'],
+            highlightbackground=self.colors['border_subtle']
         )
-        self.program_output.pack(fill=tk.BOTH, expand=True)
+        self.program_output.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
         
-        # Tab de información
-        info_frame = tk.Frame(self.notebook, bg=self.colors['bg_secondary'])
+        # Tab de información - transparente
+        info_frame = tk.Frame(
+            self.notebook, 
+            bg=self.colors['bg_transparent'],
+            relief=tk.FLAT,
+            bd=1,
+            highlightbackground=self.colors['border_subtle'],
+            highlightthickness=1
+        )
         self.notebook.add(info_frame, text="Información")
         
-        info_label = tk.Label(
-            info_frame,
-            text="Documentación del Lenguaje",
-            font=('Arial', 12, 'bold'),
-            bg=self.colors['bg_secondary'],
-            fg=self.colors['fg_primary']
-        )
-        info_label.pack(anchor=tk.W, padx=8, pady=8)
-        
-        # Frame para imagen de fondo de info
-        self.info_bg_frame = tk.Frame(info_frame, bg=self.colors['bg_primary'])
-        self.info_bg_frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
-        
         self.info_output = scrolledtext.ScrolledText(
-            self.info_bg_frame,
-            font=('Consolas', 9),  # Fuente más pequeña
-            bg=self.colors['bg_primary'],
+            info_frame,
+            font=('Consolas', 9),
+            bg=self.colors['bg_transparent'],
             fg=self.colors['fg_secondary'],
-            relief=tk.SUNKEN,
-            bd=3
+            relief=tk.FLAT,
+            bd=0,
+            highlightthickness=1,
+            highlightcolor=self.colors['border_subtle'],
+            highlightbackground=self.colors['border_subtle']
         )
-        self.info_output.pack(fill=tk.BOTH, expand=True)
+        self.info_output.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
         
         # Mostrar información de bienvenida
         self.show_welcome_info()
         
+    def toggle_theme(self, dark_mode):
+        """Cambiar entre modo oscuro y claro"""
+        self.dark_mode = dark_mode
+        self.setup_styles()
+        self.load_theme_background()  # Cargar nueva imagen
+        self.refresh_ui()
+        
+    def refresh_ui(self):
+        """Refrescar la interfaz con nuevos colores"""
+        # Actualizar todos los widgets principales
+        self.root.configure(bg=self.colors['bg_primary'])
+        
+        # Actualizar canvas del editor si existe
+        if hasattr(self, 'editor_canvas') and self.editor_canvas:
+            self.editor_canvas.configure(bg=self.colors['bg_primary'])
+            self.apply_canvas_background()  # Reaplicar imagen de fondo
+        
+        # Actualizar editor solo si ya existe
+        if hasattr(self, 'code_editor') and self.code_editor:
+            try:
+                self.code_editor.configure(
+                    bg=self.colors['bg_primary'],  # Mismo color que el canvas
+                    fg=self.colors['fg_primary'],
+                    insertbackground=self.colors['fg_primary'],
+                    selectbackground=self.colors['select_bg'],
+                    selectforeground=self.colors['select_fg']
+                )
+            except:
+                # Fallback
+                self.code_editor.configure(
+                    bg=self.colors['bg_transparent'],
+                    fg=self.colors['fg_primary'],
+                    insertbackground=self.colors['fg_primary'],
+                    selectbackground=self.colors['select_bg'],
+                    selectforeground=self.colors['select_fg']
+                )
+        
+        # Actualizar paneles de salida solo si existen
+        if hasattr(self, 'error_output') and self.error_output:
+            self.error_output.configure(
+                bg=self.colors['bg_transparent'],
+                fg=self.colors['fg_secondary']
+            )
+        
+        if hasattr(self, 'program_output') and self.program_output:
+            self.program_output.configure(
+                bg=self.colors['bg_transparent'],
+                fg=self.colors['fg_primary']
+            )
+        
+        if hasattr(self, 'info_output') and self.info_output:
+            self.info_output.configure(
+                bg=self.colors['bg_transparent'],
+                fg=self.colors['fg_secondary']
+            )
+        
+        # Reaplicar imagen de fondo al editor solo si existe
+        if hasattr(self, 'editor_container') and hasattr(self, 'bg_photo') and self.bg_photo:
+            self.apply_editor_background()
+    
     def setup_bindings(self):
         """Configura los atajos de teclado"""
         self.root.bind('<Control-n>', lambda e: self.new_file())
@@ -388,7 +686,7 @@ Transmutation GateOfTruth() -> void {
         self.root.bind('<Control-s>', lambda e: self.save_file())
         self.root.bind('<F9>', lambda e: self.test_lexer())
         self.root.bind('<F5>', lambda e: self.test_parser())
-        
+    
     # ========================================
     # MÉTODOS DE ARCHIVO
     # ========================================
@@ -435,131 +733,6 @@ Transmutation GateOfTruth() -> void {
                 messagebox.showerror("Error", f"No se pudo guardar:\n{str(e)}")
     
     # ========================================
-    # GESTIÓN DE IMÁGENES DE FONDO
-    # ========================================
-    
-    def load_background_image(self):
-        """Cargar imagen de fondo"""
-        file_path = filedialog.askopenfilename(
-            title="Seleccionar imagen de fondo",
-            filetypes=[
-                ("Imágenes", "*.png *.jpg *.jpeg *.gif *.bmp"),
-                ("PNG", "*.png"),
-                ("JPEG", "*.jpg *.jpeg"),
-                ("Todos los archivos", "*.*")
-            ]
-        )
-        
-        if file_path:
-            try:
-                # Cargar y redimensionar imagen a tamaño más pequeño y centrado
-                image = Image.open(file_path)
-                # Redimensionar a un tamaño más pequeño para que no ocupe todo el editor
-                image = image.resize((300, 200), Image.Resampling.LANCZOS)
-                self.bg_photo = ImageTk.PhotoImage(image)
-                
-                # Aplicar a todos los frames de fondo
-                self.apply_background_image()
-                
-                messagebox.showinfo("Éxito", "Imagen de fondo aplicada")
-                
-            except Exception as e:
-                messagebox.showerror("Error", f"No se pudo cargar la imagen:\n{str(e)}")
-    
-    def apply_background_image(self):
-        """Aplicar imagen de fondo centrada a los frames"""
-        if self.bg_photo:
-            # Aplicar al editor - imagen centrada y más pequeña
-            bg_label_editor = tk.Label(self.editor_bg_frame, image=self.bg_photo, bg=self.colors['bg_primary'])
-            # Centrar la imagen
-            bg_label_editor.place(relx=0.5, rely=0.5, anchor='center')
-            bg_label_editor.lower()
-            
-            # Hacer el editor semi-transparente para que se vea la imagen
-            if self.dark_mode:
-                self.code_editor.configure(bg='#000000', highlightbackground=self.colors['bg_primary'])
-            else:
-                self.code_editor.configure(bg='#ffffff', highlightbackground=self.colors['bg_primary'])
-            
-            # Aplicar a paneles de salida también centrados
-            bg_label_output = tk.Label(self.output_bg_frame, image=self.bg_photo, bg=self.colors['bg_primary'])
-            bg_label_output.place(relx=0.5, rely=0.5, anchor='center')
-            bg_label_output.lower()
-            
-            bg_label_error = tk.Label(self.error_bg_frame, image=self.bg_photo, bg=self.colors['bg_primary'])
-            bg_label_error.place(relx=0.5, rely=0.5, anchor='center')
-            bg_label_error.lower()
-            
-            bg_label_info = tk.Label(self.info_bg_frame, image=self.bg_photo, bg=self.colors['bg_primary'])
-            bg_label_info.place(relx=0.5, rely=0.5, anchor='center')
-            bg_label_info.lower()
-    
-    def remove_background_image(self):
-        """Quitar imagen de fondo"""
-        self.bg_photo = None
-        # Limpiar todos los labels de fondo
-        for widget in self.editor_bg_frame.winfo_children():
-            if isinstance(widget, tk.Label):
-                widget.destroy()
-        for widget in self.output_bg_frame.winfo_children():
-            if isinstance(widget, tk.Label):
-                widget.destroy()
-        for widget in self.error_bg_frame.winfo_children():
-            if isinstance(widget, tk.Label):
-                widget.destroy()
-        for widget in self.info_bg_frame.winfo_children():
-            if isinstance(widget, tk.Label):
-                widget.destroy()
-        
-        # Restaurar colores originales
-        self.code_editor.configure(bg=self.colors['bg_primary'])
-        messagebox.showinfo("Éxito", "Imagen de fondo eliminada")
-    
-    # ========================================
-    # GESTIÓN DE TEMAS
-    # ========================================
-    
-    def toggle_theme(self, dark_mode):
-        """Cambiar entre modo oscuro y claro"""
-        self.dark_mode = dark_mode
-        self.setup_styles()
-        self.refresh_ui()
-        
-    def refresh_ui(self):
-        """Refrescar la interfaz con nuevos colores"""
-        # Actualizar todos los widgets principales
-        self.root.configure(bg=self.colors['bg_primary'])
-        
-        # Actualizar editor
-        self.code_editor.configure(
-            bg=self.colors['bg_primary'],
-            fg=self.colors['fg_primary'],
-            insertbackground=self.colors['fg_primary'],
-            selectbackground=self.colors['select_bg'],
-            selectforeground=self.colors['select_fg']
-        )
-        
-        # Actualizar paneles de salida
-        self.error_output.configure(
-            bg=self.colors['bg_primary'],
-            fg=self.colors['fg_secondary']
-        )
-        
-        self.program_output.configure(
-            bg=self.colors['bg_primary'],
-            fg=self.colors['fg_primary']
-        )
-        
-        self.info_output.configure(
-            bg=self.colors['bg_primary'],
-            fg=self.colors['fg_secondary']
-        )
-        
-        # Reaplicar imagen de fondo si existe
-        if self.bg_photo:
-            self.apply_background_image()
-    
-    # ========================================
     # ANÁLISIS
     # ========================================
     
@@ -585,10 +758,10 @@ Transmutation GateOfTruth() -> void {
             for token_type, count in sorted(token_counts.items()):
                 output += f"   {token_type}: {count}\n"
             
-            output += "\nSecuencia de tokens (primeros 30):\n"
+            output += "\nSecuencia de tokens (primeros 25):\n"
             count = 0
             for token in tokens:
-                if token.type.name not in ['WHITESPACE', 'NEWLINE'] and count < 30:
+                if token.type.name not in ['WHITESPACE', 'NEWLINE'] and count < 25:
                     output += f"{count+1:3d}. {token.type.name:15} -> '{token.value}'\n"
                     count += 1
                     
@@ -654,8 +827,8 @@ Retorno: EquivalentExchange
 
 Características:
 • Sintaxis inspirada en FMA
-• Modos oscuro y claro
-• Soporte para imágenes de fondo
+• Interfaz transparente con imagen de fondo automática
+• Modo oscuro/claro con imágenes temáticas
 • Análisis léxico y sintáctico
 • Ejemplos incluidos
 
@@ -807,34 +980,44 @@ Transmutation calcularPoder(Solid edad) -> Solid {
         window.grab_set()
         
         # Título
-        title_frame = tk.Frame(window, bg=self.colors['bg_accent'], relief=tk.RAISED, bd=4)
+        title_frame = tk.Frame(
+            window, 
+            bg=self.colors['button_bg'], 
+            relief=tk.RAISED, 
+            bd=3
+        )
         title_frame.pack(fill=tk.X, padx=10, pady=10)
         
         title_label = tk.Label(
             title_frame,
             text="EJEMPLOS DE CÓDIGO ALCHEMIST",
-            font=('Arial', 16, 'bold'),
-            bg=self.colors['bg_accent'],
-            fg=self.colors['fg_primary'],
-            pady=10
+            font=('Arial', 14, 'bold'),
+            bg=self.colors['button_bg'],
+            fg=self.colors['button_fg'],
+            pady=8
         )
         title_label.pack()
         
         # Lista
-        list_frame = tk.Frame(window, bg=self.colors['bg_secondary'], relief=tk.RIDGE, bd=3)
+        list_frame = tk.Frame(
+            window, 
+            bg=self.colors['bg_transparent'], 
+            relief=tk.RIDGE, 
+            bd=2
+        )
         list_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=10)
         
         listbox = tk.Listbox(
             list_frame,
-            font=('Consolas', 11, 'bold'),
-            bg=self.colors['bg_primary'],
+            font=('Consolas', 10, 'bold'),
+            bg=self.colors['bg_transparent'],
             fg=self.colors['fg_primary'],
             selectbackground=self.colors['select_bg'],
             selectforeground=self.colors['select_fg'],
-            relief=tk.SUNKEN,
-            bd=2
+            relief=tk.FLAT,
+            bd=0
         )
-        listbox.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
+        listbox.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
         
         for title in examples.keys():
             listbox.insert(tk.END, title)
@@ -864,7 +1047,7 @@ Transmutation calcularPoder(Solid edad) -> Solid {
             button_frame,
             text="CARGAR EJEMPLO",
             command=load_selected,
-            font=('Arial', 12, 'bold'),
+            font=('Arial', 11, 'bold'),
             bg=self.colors['button_bg'],
             fg=self.colors['button_fg'],
             activebackground=self.colors['button_active'],
@@ -872,22 +1055,22 @@ Transmutation calcularPoder(Solid edad) -> Solid {
             relief=tk.RAISED,
             bd=3,
             padx=20,
-            pady=8
+            pady=6
         ).pack(side=tk.LEFT, padx=(0, 15))
         
         tk.Button(
             button_frame,
             text="CERRAR",
             command=window.destroy,
-            font=('Arial', 11),
-            bg=self.colors['bg_accent'],
-            fg=self.colors['fg_primary'],
+            font=('Arial', 10),
+            bg=self.colors['button_bg'],
+            fg=self.colors['button_fg'],
             activebackground=self.colors['button_active'],
             activeforeground=self.colors['fg_primary'],
             relief=tk.RAISED,
             bd=3,
             padx=15,
-            pady=8
+            pady=6
         ).pack(side=tk.RIGHT)
         
     def show_language_help(self, title, content):
@@ -898,27 +1081,32 @@ Transmutation calcularPoder(Solid edad) -> Solid {
         window.configure(bg=self.colors['bg_primary'])
         
         # Título
-        title_frame = tk.Frame(window, bg=self.colors['bg_accent'], relief=tk.RAISED, bd=3)
+        title_frame = tk.Frame(
+            window, 
+            bg=self.colors['button_bg'], 
+            relief=tk.RAISED, 
+            bd=3
+        )
         title_frame.pack(fill=tk.X, padx=8, pady=8)
         
         title_label = tk.Label(
             title_frame,
             text=title,
-            font=('Arial', 14, 'bold'),
-            bg=self.colors['bg_accent'],
-            fg=self.colors['fg_primary'],
-            pady=8
+            font=('Arial', 12, 'bold'),
+            bg=self.colors['button_bg'],
+            fg=self.colors['button_fg'],
+            pady=6
         )
         title_label.pack()
         
         # Contenido
         text = scrolledtext.ScrolledText(
             window, 
-            bg=self.colors['bg_primary'], 
+            bg=self.colors['bg_transparent'], 
             fg=self.colors['fg_primary'],
             font=('Consolas', 10),
-            relief=tk.SUNKEN,
-            bd=3
+            relief=tk.FLAT,
+            bd=0
         )
         text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         text.insert('1.0', content)
@@ -928,15 +1116,16 @@ Transmutation calcularPoder(Solid edad) -> Solid {
         """Mostrar acerca de"""
         about = """ALCHEMIST IDE
 
-Versión: 3.0 Epic Edition
-Estilo: Blanco y Negro con modos oscuro/claro
+Versión: 4.0 Transparent Edition
+Estilo: Transparente con imagen de fondo automática
 Inspirado en: Fullmetal Alchemist Brotherhood
 Tema: Intercambio Equivalente
 
 Características:
-• Sintaxis inspirada en FMA
-• Modos oscuro y claro
-• Soporte para imágenes de fondo personalizadas
+• Sintaxis épica inspirada en FMA
+• Interfaz transparente
+• Imagen de fondo automática según tema
+• Modos oscuro/claro con imágenes específicas
 • Análisis léxico y sintáctico completo
 • 20 palabras reservadas alquímicas
 • Función principal GateOfTruth()
