@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """
 Analizador Semantico para aurum
-Este archivo se encarga de revisar que el codigo tenga sentido, tipos correctos y eso
-Hecho para el proyecto de paradigmas de programacion
+Este archivo se encarga de revisar que el codigo tenga sentido, tipos correctos 
 """
 
-from typing import Dict, List, Optional, Any, Set
+from typing import Dict, List, Optional 
 from dataclasses import dataclass
 
 # importamos todas las clases del parser que necesitamos para trabajar
 from .parser import (
-    ASTNode, Program, Function, Parameter, Statement, Expression,
+    Program, Function, Parameter, Statement, Expression,
     VariableDeclaration, Assignment, IfStatement, WhileStatement, 
     ForStatement, ReturnStatement, BreakStatement, ContinueStatement,
     ExpressionStatement, BinaryOperation, UnaryOperation, FunctionCall,
@@ -661,8 +660,8 @@ class aurumSemanticAnalyzer:
 
 def main():
     """funcion para probar el analizador semantico"""
-    from .lexer import aurumLexer
-    from .parser import aurumParser
+    from .lexer import AurumLexer
+    from .parser import AurumParser
     
     # codigo de prueba que tiene errores a proposito
     codigo_prueba = '''
@@ -694,10 +693,10 @@ def main():
     
     try:
         # analisis lexico
-        lexer = aurumLexer()
+        lexer = AurumLexer()
         
         # analisis sintactico  
-        parser = aurumParser()
+        parser = AurumParser()
         arbol = parser.parse(codigo_prueba)
         
         # analisis semantico

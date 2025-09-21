@@ -4,11 +4,11 @@ aurum Parser - Analizador Sintáctico
 Analiza la estructura sintáctica del código y genera un AST (Abstract Syntax Tree)
 """
 
-from typing import List, Optional, Union, Any
+from typing import List, Optional, Any
 from dataclasses import dataclass
-from abc import ABC, abstractmethod
+from abc import ABC
 
-from .lexer import Token, TokenType, aurumLexer
+from .lexer import Token, TokenType, AurumLexer
 
 
 # ========================================
@@ -195,7 +195,7 @@ class ParseError(Exception):
 # ANALIZADOR SINTÁCTICO (PARSER)
 # ========================================
 
-class aurumParser:
+class AurumParser:
     """Analizador sintáctico para aurum"""
     
     def __init__(self):
@@ -217,7 +217,7 @@ class aurumParser:
             ParseError: Si encuentra errores sintácticos
         """
         # Generar tokens
-        lexer = aurumLexer()
+        lexer = AurumLexer()
         all_tokens = lexer.tokenize(source_code)
         
         # Filtrar tokens irrelevantes (whitespace, newlines, comments)
@@ -241,8 +241,7 @@ class aurumParser:
         
         return Program(functions)
     
-    # ========================================
-    # MÉTODOS AUXILIARES
+    # metodos auxiliares
     # ========================================
     
     def _peek(self) -> Token:
@@ -287,8 +286,7 @@ class aurumParser:
         current_token = self._peek()
         raise ParseError(message, current_token.line, current_token.column)
     
-    # ========================================
-    # MÉTODOS DE ANÁLISIS SINTÁCTICO
+    # metodos analisis sintactico
     # ========================================
     
     def _parse_function(self) -> Function:
@@ -528,8 +526,8 @@ class aurumParser:
         expr = self._parse_expression()
         return ExpressionStatement(expr, line)
     
-    # ========================================
-    # ANÁLISIS DE EXPRESIONES
+    
+    # analisis de expresiones
     # ========================================
     
     def _parse_expression(self) -> Expression:
@@ -674,7 +672,7 @@ class aurumParser:
 
 def main():
     """Función de prueba del parser"""
-    parser = aurumParser()
+    parser = AurumParser()
     
     # Código de prueba
     test_code = '''

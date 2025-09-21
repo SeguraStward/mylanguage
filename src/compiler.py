@@ -7,8 +7,8 @@ Integra todas las fases del proceso de compilación: léxico, sintáctico, semá
 from typing import List, Optional, Dict, Any
 from dataclasses import dataclass
 
-from .lexer import aurumLexer, LexerError
-from .parser import aurumParser, ParseError
+from .lexer import AurumLexer, LexerError
+from .parser import AurumParser, ParseError
 from .semantic_analyzer import aurumSemanticAnalyzer, SemanticError
 from .code_generator import aurumCodeGenerator, CodeGeneratorError
 from .interpreter import aurumInterpreter, RuntimeError
@@ -40,8 +40,8 @@ class aurumCompiler:
     
     def __init__(self):
         """Inicializa el compilador"""
-        self.lexer = aurumLexer()
-        self.parser = aurumParser()
+        self.lexer = AurumLexer()
+        self.parser = AurumParser()
         self.semantic_analyzer = aurumSemanticAnalyzer()
         self.code_generator = aurumCodeGenerator()
         self.interpreter = aurumInterpreter()

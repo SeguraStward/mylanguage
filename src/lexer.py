@@ -1,34 +1,34 @@
 #!/usr/bin/env python3
 """
-aurum Lexer - Analizador Léxico
-Convierte el código fuente en tokens para el análisis sintáctico
+Analizador lexico transforma el codigo en tokens para poder
+realizar el analisis sintactico
 """
 
 import re
 from enum import Enum
 from dataclasses import dataclass
-from typing import List, Optional, Iterator
+from typing import List, Iterator
 
 
 class TokenType(Enum):
-    """Tipos de tokens del lenguaje aurum"""
-    # Literales
+    """Tipos de tokens"""
+    # literales
     INTEGER = "INTEGER"
     FLOAT = "FLOAT"
     STRING = "STRING"
     BOOLEAN = "BOOLEAN"
     
-    # Identificadores
+    # identificador
     IDENTIFIER = "IDENTIFIER"
     
-    # Palabras reservadas - Tipos
+    # tipos de datos
     INT = "INT"
     FLOAT_TYPE = "FLOAT_TYPE"
     STRING_TYPE = "STRING_TYPE"
     BOOL_TYPE = "BOOL_TYPE"
     VOID = "VOID"
     
-    # Palabras reservadas - Control
+    #  control de flujo
     IF = "IF"
     ELSE = "ELSE"
     ELIF = "ELIF"
@@ -40,19 +40,19 @@ class TokenType(Enum):
     FUNC = "FUNC"
     MAIN = "MAIN"
     
-    # Palabras reservadas - Entrada/Salida
+    # palabras in/out
     READ = "READ"
     WRITE = "WRITE"
     PRINT = "PRINT"
     
-    # Operadores aritméticos
+    # Operadores
     PLUS = "PLUS"
     MINUS = "MINUS"
     MULTIPLY = "MULTIPLY"
     DIVIDE = "DIVIDE"
     MODULO = "MODULO"
     
-    # Operadores de comparación
+    # comparadores
     EQUAL = "EQUAL"
     NOT_EQUAL = "NOT_EQUAL"
     LESS_THAN = "LESS_THAN"
@@ -60,15 +60,15 @@ class TokenType(Enum):
     LESS_EQUAL = "LESS_EQUAL"
     GREATER_EQUAL = "GREATER_EQUAL"
     
-    # Operadores lógicos
+    # logicos
     AND = "AND"
     OR = "OR"
     NOT = "NOT"
     
-    # Asignación
+    # asignacion
     ASSIGN = "ASSIGN"
     
-    # Delimitadores
+    # delimitadores
     LPAREN = "LPAREN"
     RPAREN = "RPAREN"
     LBRACE = "LBRACE"
@@ -80,7 +80,7 @@ class TokenType(Enum):
     DOT = "DOT"
     ARROW = "ARROW"
     
-    # Especiales
+    # especiales
     NEWLINE = "NEWLINE"
     EOF = "EOF"
     COMMENT = "COMMENT"
@@ -90,6 +90,7 @@ class TokenType(Enum):
 @dataclass
 class Token:
     """Representa un token del lenguaje"""
+    # info del token ( tipo, valor, linea, columna)
     type: TokenType
     value: str
     line: int
@@ -108,22 +109,22 @@ class LexerError(Exception):
         super().__init__(f"Error léxico en línea {line}, columna {column}: {message}")
 
 
-class aurumLexer:
-    """Analizador léxico para aurum"""
+class AurumLexer:
+    """Analizador lexico para aurum"""
     
     def __init__(self):
         """Inicializa el lexer con las palabras reservadas y patrones"""
         
-        # Palabras reservadas del lenguaje
+        # palabras reservadas del lenguaje
         self.keywords = {
-            # Tipos de datos
+            # tipos de datos
             'int': TokenType.INT,
             'float': TokenType.FLOAT_TYPE,
             'string': TokenType.STRING_TYPE,
             'bool': TokenType.BOOL_TYPE,
             'void': TokenType.VOID,
             
-            # Control de flujo
+            # control de flujo
             'if': TokenType.IF,
             'else': TokenType.ELSE,
             'elif': TokenType.ELIF,
@@ -135,23 +136,23 @@ class aurumLexer:
             'func': TokenType.FUNC,
             'main': TokenType.MAIN,
             
-            # Operadores lógicos
+            # operadores logicos
             'and': TokenType.AND,
             'or': TokenType.OR,
             'not': TokenType.NOT,
             
-            # Valores booleanos
+            # valores booleanos
             'true': TokenType.BOOLEAN,
             'false': TokenType.BOOLEAN,
         }
         
-        # Patrones de expresiones regulares
+        # patrones de expresiones regulares
         self.patterns = [
             # Comentarios
             (r'//.*', TokenType.COMMENT),
             (r'/\*.*?\*/', TokenType.COMMENT),
             
-            # Números
+            # Numeros
             (r'\d+\.\d+', TokenType.FLOAT),
             (r'\d+', TokenType.INTEGER),
             
@@ -166,7 +167,7 @@ class aurumLexer:
             (r'<=', TokenType.LESS_EQUAL),
             (r'>=', TokenType.GREATER_EQUAL),
             
-            # Operadores de un carácter
+            # Operadores de un caracter
             (r'\+', TokenType.PLUS),
             (r'-', TokenType.MINUS),
             (r'\*', TokenType.MULTIPLY),
@@ -187,7 +188,7 @@ class aurumLexer:
             (r',', TokenType.COMMA),
             (r'\.', TokenType.DOT),
             
-            # Identificadores (deben ir después de las palabras reservadas)
+            # Identificadores (deben ir despues de las palabras reservadas)
             (r'[a-zA-Z_][a-zA-Z0-9_]*', TokenType.IDENTIFIER),
             
             # Espacios en blanco y saltos de línea
@@ -201,35 +202,36 @@ class aurumLexer:
     
     def tokenize(self, source_code: str) -> List[Token]:
         """
-        Convierte el código fuente en una lista de tokens
+        Convierte el codigo fuente en una lista de tokens
         
         Args:
-            source_code: Código fuente a analizar
+            source_code: Codigo fuente a analizar
             
         Returns:
             Lista de tokens encontrados
             
         Raises:
-            LexerError: Si encuentra un carácter no reconocido
+            LexerError: Si encuentra un caracter no reconocido
         """
         tokens = []
         lines = source_code.split('\n')
-        
-        for line_num, line in enumerate(lines, 1):
-            self._tokenize_line(line, line_num, tokens)
-        
-        # Agregar token EOF al final
+
+
+        for line_number, lineContent in enumerate(lines, 1):
+            self._tokenize_line(lineContent, line_number, tokens)
+
+         
         tokens.append(Token(TokenType.EOF, '', len(lines), len(lines[-1]) if lines else 0))
         
         return tokens
     
     def _tokenize_line(self, line: str, line_num: int, tokens: List[Token]) -> None:
         """
-        Tokeniza una línea específica del código
+        Tokeniza una linea especifica del codigo
         
         Args:
-            line: Línea de código a tokenizar
-            line_num: Número de línea actual
+            line: Linea de codigo a tokenizar
+            line_num: Número de linea actual
             tokens: Lista donde agregar los tokens encontrados
         """
         pos = 0
@@ -237,7 +239,7 @@ class aurumLexer:
         while pos < len(line):
             match_found = False
             
-            # Intentar hacer match con cada patrón
+            # Intentar hacer match con cada patron
             for pattern, token_type in self.compiled_patterns:
                 match = pattern.match(line, pos)
                 if match:
@@ -257,19 +259,19 @@ class aurumLexer:
                     break
             
             if not match_found:
-                # Carácter no reconocido
-                raise LexerError(f"Carácter no reconocido: '{line[pos]}'", 
+                # Caracter no reconocido
+                raise LexerError(f"Caracter no reconocido: '{line[pos]}'",
                                line_num, pos + 1)
     
     def get_token_iterator(self, source_code: str) -> Iterator[Token]:
         """
-        Retorna un iterador de tokens para análisis streaming
+        Retorna un iterador de tokens para analisis streaming
         
         Args:
-            source_code: Código fuente a analizar
+            source_code: Codigo fuente a analizar
             
         Yields:
-            Token: Siguiente token en el código
+            Token: Siguiente token en el codigo
         """
         tokens = self.tokenize(source_code)
         for token in tokens:
@@ -277,10 +279,9 @@ class aurumLexer:
 
 
 def main():
-    """Función de prueba del lexer"""
-    lexer = aurumLexer()
+    """Funcion de prueba"""
+    lexer = AurumLexer()
     
-    # Código de prueba
     test_code = '''
     func main() -> void {
         int edad = 25
@@ -301,17 +302,17 @@ def main():
     try:
         tokens = lexer.tokenize(test_code)
         
-        print("🔍 ANÁLISIS LÉXICO COMPLETADO")
+        print("ANALISIS LEXICO COMPLETADO")
         print("=" * 50)
         
         for token in tokens:
-            if token.type != TokenType.NEWLINE:  # Omitir saltos de línea para claridad
+            if token.type != TokenType.NEWLINE: 
                 print(f"{token.line:2d}:{token.column:2d} | {token.type.value:15} | '{token.value}'")
                 
-        print(f"\n📊 Total de tokens: {len([t for t in tokens if t.type != TokenType.NEWLINE])}")
+        print(f"\nTotal de tokens: {len([t for t in tokens if t.type != TokenType.NEWLINE])}")
         
     except LexerError as e:
-        print(f"❌ {e}")
+        print(f" {e}")
 
 
 if __name__ == "__main__":

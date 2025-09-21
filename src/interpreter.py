@@ -655,8 +655,8 @@ class aurumInterpreter:
 
 def main():
     """Función de prueba del intérprete"""
-    from .lexer import aurumLexer
-    from .parser import aurumParser
+    from .lexer import AurumLexer
+    from .parser import AurumParser
     from .semantic_analyzer import aurumSemanticAnalyzer
     from .code_generator import aurumCodeGenerator
     
@@ -683,8 +683,8 @@ def main():
     
     try:
         # Compilación completa
-        lexer = aurumLexer()
-        parser = aurumParser()
+        lexer = AurumLexer()
+        parser = AurumParser()
         analyzer = aurumSemanticAnalyzer()
         generator = aurumCodeGenerator()
         

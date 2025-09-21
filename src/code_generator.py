@@ -437,8 +437,8 @@ class aurumCodeGenerator:
 
 def main():
     """Función de prueba del generador de código"""
-    from .lexer import aurumLexer
-    from .parser import aurumParser
+    from .lexer import AurumLexer
+    from .parser import AurumParser
     from .semantic_analyzer import aurumSemanticAnalyzer
     
     # Código de prueba
@@ -469,10 +469,10 @@ def main():
     
     try:
         # Análisis léxico
-        lexer = aurumLexer()
+        lexer = AurumLexer()
         
         # Análisis sintáctico
-        parser = aurumParser()
+        parser = AurumParser()
         ast = parser.parse(test_code)
         
         # Análisis semántico
