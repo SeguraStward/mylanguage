@@ -22,28 +22,34 @@ class TokenType(Enum):
     IDENTIFIER = "IDENTIFIER"
     
     # tipos de datos
-    INT = "INT"
-    FLOAT_TYPE = "FLOAT_TYPE"
-    STRING_TYPE = "STRING_TYPE"
-    BOOL_TYPE = "BOOL_TYPE"
+    SOLID_TYPE = "SOLID_TYPE"
+    LIQUID_TYPE = "LIQUID_TYPE"
+    INSCRIPTION_TYPE = "INSCRIPTION_TYPE"
+    PRINCIPLE_TYPE = "PRINCIPLE_TYPE"
     VOID = "VOID"
     
-    #  control de flujo
-    IF = "IF"
-    ELSE = "ELSE"
-    ELIF = "ELIF"
-    WHILE = "WHILE"
-    FOR = "FOR"
+    #  control de flujo (nueva sintaxis alquímica)
+    OBSERVE = "OBSERVE"
+    ALTERNATIVELY = "ALTERNATIVELY"
+    INEVITABLY = "INEVITABLY"
+    TRANSMUTEUNTIL = "TRANSMUTEUNTIL"
+    ALCHEMICCYCLE = "ALCHEMICCYCLE"
     BREAK = "BREAK"
     CONTINUE = "CONTINUE"
     RETURN = "RETURN"
-    FUNC = "FUNC"
-    MAIN = "MAIN"
+    TRANSMUTATION = "TRANSMUTATION"  # palabra clave para definir funciones (reemplaza "func")
+    EQUIVALENTEXCHANGE = "EQUIVALENTEXCHANGE"  # palabra clave para retornar valores (reemplaza "return")
     
     # palabras in/out
-    READ = "READ"
-    WRITE = "WRITE"
-    PRINT = "PRINT"
+    ABSORB = "ABSORB"
+    TRANSMUTE = "TRANSMUTE"
+    
+    # valores alquímicos
+    SOLID = "SOLID"
+    LIQUID = "LIQUID"
+    INSCRIPTION = "INSCRIPTION"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
     
     # Operadores
     PLUS = "PLUS"
@@ -109,41 +115,44 @@ class LexerError(Exception):
         super().__init__(f"Error léxico en línea {line}, columna {column}: {message}")
 
 
-class AurumLexer:
-    """Analizador lexico para aurum"""
+class AlchemistLexer:
+    """Analizador lexico para Alchemist"""
     
     def __init__(self):
         """Inicializa el lexer con las palabras reservadas y patrones"""
         
-        # palabras reservadas del lenguaje
+        # palabras reservadas del lenguaje (nueva sintaxis alquímica)
         self.keywords = {
-            # tipos de datos
-            'int': TokenType.INT,
-            'float': TokenType.FLOAT_TYPE,
-            'string': TokenType.STRING_TYPE,
-            'bool': TokenType.BOOL_TYPE,
+            # tipos de datos alquimicos
+            'Solid': TokenType.SOLID_TYPE,
+            'Liquid': TokenType.LIQUID_TYPE,
+            'Inscription': TokenType.INSCRIPTION_TYPE,
+            'Principle': TokenType.PRINCIPLE_TYPE,
             'void': TokenType.VOID,
             
-            # control de flujo
-            'if': TokenType.IF,
-            'else': TokenType.ELSE,
-            'elif': TokenType.ELIF,
-            'while': TokenType.WHILE,
-            'for': TokenType.FOR,
+            # control de flujo alquímico
+            'Observe': TokenType.OBSERVE,
+            'Alternatively': TokenType.ALTERNATIVELY,
+            'Inevitably': TokenType.INEVITABLY,
+            'TransmuteUntil': TokenType.TRANSMUTEUNTIL,
+            'AlchemicCycle': TokenType.ALCHEMICCYCLE,
             'break': TokenType.BREAK,
             'continue': TokenType.CONTINUE,
-            'return': TokenType.RETURN,
-            'func': TokenType.FUNC,
-            'main': TokenType.MAIN,
+            'Transmutation': TokenType.TRANSMUTATION,  # para definir funciones
+            'EquivalentExchange': TokenType.EQUIVALENTEXCHANGE,  # para retornar valores
             
             # operadores logicos
             'and': TokenType.AND,
             'or': TokenType.OR,
             'not': TokenType.NOT,
             
-            # valores booleanos
-            'true': TokenType.BOOLEAN,
-            'false': TokenType.BOOLEAN,
+            # valores de principio alquímico
+            'Accepted': TokenType.ACCEPTED,
+            'Rejected': TokenType.REJECTED,
+            
+            # funciones I/O alquimicas
+            'Absorb': TokenType.ABSORB,
+            'Transmute': TokenType.TRANSMUTE,
         }
         
         # patrones de expresiones regulares
@@ -280,7 +289,7 @@ class AurumLexer:
 
 def main():
     """Funcion de prueba"""
-    lexer = AurumLexer()
+    lexer = AlchemistLexer()
     
     test_code = '''
     func main() -> void {

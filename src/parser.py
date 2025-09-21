@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-aurum Parser - Analizador Sintáctico
+Alchemist Parser - Analizador Sintáctico
 Analiza la estructura sintáctica del código y genera un AST (Abstract Syntax Tree)
 """
 
@@ -8,7 +8,11 @@ from typing import List, Optional, Any
 from dataclasses import dataclass
 from abc import ABC
 
-from .lexer import Token, TokenType, AurumLexer
+from typing import List, Optional, Any
+from dataclasses import dataclass
+from abc import ABC
+
+from .lexer import AlchemistLexer, Token, TokenType
 
 
 # ========================================
@@ -44,6 +48,26 @@ class Parameter(ASTNode):
 
 
 @dataclass
+class Statement(ASTNode):
+    """Clase base para declaraciones"""
+    pass
+
+
+@dataclass
+class ObserveStatement(Statement):
+    """Declaración Observe/Alternatively/Inevitably"""
+    condition: 'Expression'
+    then_body: List['Statement']
+    alternatively_parts: List['AlternativelyPart']
+    inevitably_body: Optional[List['Statement']]
+    line: int
+
+
+@dataclass
+class AlternativelyPart(ASTNode):
+    """Parte Alternatively de un Observe statement"""
+    condition: 'Expression'
+    body: List['Statement']
 class Statement(ASTNode):
     """Clase base para todas las declaraciones"""
     pass
@@ -195,8 +219,8 @@ class ParseError(Exception):
 # ANALIZADOR SINTÁCTICO (PARSER)
 # ========================================
 
-class AurumParser:
-    """Analizador sintáctico para aurum"""
+class AlchemistParser:
+    """Analizador sintáctico para Alchemist"""
     
     def __init__(self):
         """Inicializa el parser"""
@@ -217,7 +241,7 @@ class AurumParser:
             ParseError: Si encuentra errores sintácticos
         """
         # Generar tokens
-        lexer = AurumLexer()
+        lexer = AlchemistLexer()
         all_tokens = lexer.tokenize(source_code)
         
         # Filtrar tokens irrelevantes (whitespace, newlines, comments)
@@ -234,10 +258,10 @@ class AurumParser:
             function = self._parse_function()
             functions.append(function)
         
-        # Verificar que existe función main
-        main_found = any(func.name == 'main' for func in functions)
-        if not main_found:
-            raise ParseError("Se requiere una función 'main'", 1, 1)
+        # Verificar que existe función GateOfTruth (función principal)
+        gateoftruth_found = any(func.name == 'GateOfTruth' for func in functions)
+        if not gateoftruth_found:
+            raise ParseError("Se requiere una función principal 'GateOfTruth'", 1, 1)
         
         return Program(functions)
     
@@ -293,12 +317,10 @@ class AurumParser:
         """Analiza una definición de función"""
         line = self._peek().line
         
-        self._consume(TokenType.FUNC, "Se esperaba 'func'")
+        self._consume(TokenType.TRANSMUTATION, "Se esperaba 'Transmutation'")
         
-        # Aceptar tanto IDENTIFIER como MAIN para el nombre de función
+        # Solo aceptar IDENTIFIER para el nombre de función
         if self._check(TokenType.IDENTIFIER):
-            name_token = self._advance()
-        elif self._check(TokenType.MAIN):
             name_token = self._advance()
         else:
             current_token = self._peek()
@@ -321,8 +343,8 @@ class AurumParser:
         self._consume(TokenType.ARROW, "Se esperaba '->' después de los parámetros")
         return_type_token = self._advance()
         
-        if return_type_token.type not in [TokenType.INT, TokenType.FLOAT_TYPE, 
-                                        TokenType.STRING_TYPE, TokenType.BOOL_TYPE, TokenType.VOID]:
+        if return_type_token.type not in [TokenType.SOLID_TYPE, TokenType.LIQUID_TYPE, 
+                                        TokenType.INSCRIPTION_TYPE, TokenType.PRINCIPLE_TYPE, TokenType.VOID]:
             raise ParseError("Tipo de retorno inválido", return_type_token.line, return_type_token.column)
         
         return_type = return_type_token.value
@@ -337,8 +359,8 @@ class AurumParser:
     def _parse_parameter(self) -> Parameter:
         """Analiza un parámetro de función"""
         type_token = self._advance()
-        if type_token.type not in [TokenType.INT, TokenType.FLOAT_TYPE, 
-                                 TokenType.STRING_TYPE, TokenType.BOOL_TYPE]:
+        if type_token.type not in [TokenType.SOLID_TYPE, TokenType.LIQUID_TYPE, 
+                                 TokenType.INSCRIPTION_TYPE, TokenType.PRINCIPLE_TYPE]:
             raise ParseError("Tipo de parámetro inválido", type_token.line, type_token.column)
         
         name_token = self._consume(TokenType.IDENTIFIER, "Se esperaba nombre del parámetro")
@@ -357,16 +379,16 @@ class AurumParser:
     
     def _parse_statement(self) -> Statement:
         """Analiza una declaración"""
-        if self._match(TokenType.IF):
-            return self._parse_if_statement()
+        if self._match(TokenType.OBSERVE):
+            return self._parse_observe_statement()
         
-        if self._match(TokenType.WHILE):
-            return self._parse_while_statement()
+        if self._match(TokenType.TRANSMUTEUNTIL):
+            return self._parse_transmuteuntil_statement()
         
-        if self._match(TokenType.FOR):
-            return self._parse_for_statement()
+        if self._match(TokenType.ALCHEMICCYCLE):
+            return self._parse_alchemiccycle_statement()
         
-        if self._match(TokenType.RETURN):
+        if self._match(TokenType.EQUIVALENTEXCHANGE):
             return self._parse_return_statement()
         
         if self._match(TokenType.BREAK):
@@ -387,8 +409,8 @@ class AurumParser:
     
     def _check_variable_declaration(self) -> bool:
         """Verifica si la siguiente declaración es una declaración de variable"""
-        return self._check(TokenType.INT) or self._check(TokenType.FLOAT_TYPE) or \
-               self._check(TokenType.STRING_TYPE) or self._check(TokenType.BOOL_TYPE)
+        return self._check(TokenType.SOLID_TYPE) or self._check(TokenType.LIQUID_TYPE) or \
+               self._check(TokenType.INSCRIPTION_TYPE) or self._check(TokenType.PRINCIPLE_TYPE)
     
     def _check_assignment(self) -> bool:
         """Verifica si la siguiente declaración es una asignación"""
@@ -425,59 +447,59 @@ class AurumParser:
         
         return Assignment(name, value, line)
     
-    def _parse_if_statement(self) -> IfStatement:
-        """Analiza una declaración if"""
+    def _parse_observe_statement(self) -> ObserveStatement:
+        """Analiza una declaración Observe"""
         line = self._previous().line
         
-        self._consume(TokenType.LPAREN, "Se esperaba '(' después de 'if'")
+        self._consume(TokenType.LPAREN, "Se esperaba '(' después de 'Observe'")
         condition = self._parse_expression()
         self._consume(TokenType.RPAREN, "Se esperaba ')' después de la condición")
         
         self._consume(TokenType.LBRACE, "Se esperaba '{' después de la condición")
         then_body = self._parse_block()
-        self._consume(TokenType.RBRACE, "Se esperaba '}' después del bloque if")
+        self._consume(TokenType.RBRACE, "Se esperaba '}' después del bloque Observe")
         
-        # Manejo de elif
-        elif_parts = []
-        while self._match(TokenType.ELIF):
-            self._consume(TokenType.LPAREN, "Se esperaba '(' después de 'elif'")
-            elif_condition = self._parse_expression()
-            self._consume(TokenType.RPAREN, "Se esperaba ')' después de la condición elif")
+        # Manejo de Alternatively
+        alternatively_parts = []
+        while self._match(TokenType.ALTERNATIVELY):
+            self._consume(TokenType.LPAREN, "Se esperaba '(' después de 'Alternatively'")
+            alternatively_condition = self._parse_expression()
+            self._consume(TokenType.RPAREN, "Se esperaba ')' después de la condición Alternatively")
             
-            self._consume(TokenType.LBRACE, "Se esperaba '{' después de la condición elif")
-            elif_body = self._parse_block()
-            self._consume(TokenType.RBRACE, "Se esperaba '}' después del bloque elif")
+            self._consume(TokenType.LBRACE, "Se esperaba '{' después de la condición Alternatively")
+            alternatively_body = self._parse_block()
+            self._consume(TokenType.RBRACE, "Se esperaba '}' después del bloque Alternatively")
             
-            elif_parts.append(ElifPart(elif_condition, elif_body))
+            alternatively_parts.append(AlternativelyPart(alternatively_condition, alternatively_body))
         
-        # Manejo de else
-        else_body = None
-        if self._match(TokenType.ELSE):
-            self._consume(TokenType.LBRACE, "Se esperaba '{' después de 'else'")
-            else_body = self._parse_block()
-            self._consume(TokenType.RBRACE, "Se esperaba '}' después del bloque else")
+        # Manejo de Inevitably
+        inevitably_body = None
+        if self._match(TokenType.INEVITABLY):
+            self._consume(TokenType.LBRACE, "Se esperaba '{' después de 'Inevitably'")
+            inevitably_body = self._parse_block()
+            self._consume(TokenType.RBRACE, "Se esperaba '}' después del bloque Inevitably")
         
-        return IfStatement(condition, then_body, elif_parts, else_body, line)
+        return ObserveStatement(condition, then_body, alternatively_parts, inevitably_body, line)
     
-    def _parse_while_statement(self) -> WhileStatement:
-        """Analiza una declaración while"""
+    def _parse_transmuteuntil_statement(self) -> WhileStatement:
+        """Analiza una declaración TransmuteUntil"""
         line = self._previous().line
         
-        self._consume(TokenType.LPAREN, "Se esperaba '(' después de 'while'")
+        self._consume(TokenType.LPAREN, "Se esperaba '(' después de 'TransmuteUntil'")
         condition = self._parse_expression()
         self._consume(TokenType.RPAREN, "Se esperaba ')' después de la condición")
         
         self._consume(TokenType.LBRACE, "Se esperaba '{' después de la condición")
         body = self._parse_block()
-        self._consume(TokenType.RBRACE, "Se esperaba '}' después del bloque while")
+        self._consume(TokenType.RBRACE, "Se esperaba '}' después del bloque TransmuteUntil")
         
         return WhileStatement(condition, body, line)
     
-    def _parse_for_statement(self) -> ForStatement:
-        """Analiza una declaración for"""
+    def _parse_alchemiccycle_statement(self) -> ForStatement:
+        """Analiza una declaración AlchemicCycle"""
         line = self._previous().line
         
-        self._consume(TokenType.LPAREN, "Se esperaba '(' después de 'for'")
+        self._consume(TokenType.LPAREN, "Se esperaba '(' después de 'AlchemicCycle'")
         
         # Inicialización
         init = None
@@ -632,9 +654,11 @@ class AurumParser:
     
     def _parse_primary(self) -> Expression:
         """Analiza expresiones primarias"""
-        if self._match(TokenType.BOOLEAN):
-            value = self._previous().value == "true"
-            return Literal(value, "bool")
+        if self._match(TokenType.ACCEPTED):
+            return Literal(True, "Principle")
+        
+        if self._match(TokenType.REJECTED):
+            return Literal(False, "Principle")
         
         if self._match(TokenType.INTEGER):
             value = int(self._previous().value)
@@ -654,11 +678,17 @@ class AurumParser:
             line = self._previous().line
             return Variable(name, line)
         
-        if self._match(TokenType.READ):
-            # read() es una función especial
-            self._consume(TokenType.LPAREN, "Se esperaba '(' después de 'read'")
-            self._consume(TokenType.RPAREN, "Se esperaba ')' después de 'read'")
-            return FunctionCall("read", [], self._previous().line)
+        if self._match(TokenType.TRANSMUTE):
+            # Transmute() es una función especial - manejo será en _parse_call
+            name = self._previous().value
+            line = self._previous().line
+            return Variable(name, line)
+        
+        if self._match(TokenType.ABSORB):
+            # Absorb() es una función especial
+            self._consume(TokenType.LPAREN, "Se esperaba '(' después de 'Absorb'")
+            self._consume(TokenType.RPAREN, "Se esperaba ')' después de 'Absorb'")
+            return FunctionCall("Absorb", [], self._previous().line)
         
         if self._match(TokenType.LPAREN):
             expr = self._parse_expression()
@@ -672,25 +702,25 @@ class AurumParser:
 
 def main():
     """Función de prueba del parser"""
-    parser = AurumParser()
+    parser = AlchemistParser()
     
     # Código de prueba
     test_code = '''
-    func main() -> void {
-        int edad = 25
-        string nombre = "Juan"
+    func GateOfTruth() -> void {
+        Solid edad = 25
+        Inscription nombre = "Juan"
         
         if (edad >= 18) {
-            print("Eres mayor de edad")
+            Transmute("Eres mayor de edad")
         } else {
-            print("Eres menor de edad")
+            Transmute("Eres menor de edad")
         }
         
-        int resultado = calcular(10, 20)
-        print("El resultado es: " + resultado)
+        Solid resultado = calcular(10, 20)
+        Transmute("El resultado es: " + resultado)
     }
     
-    func calcular(int a, int b) -> int {
+    func calcular(Solid a, Solid b) -> Solid {
         return a + b
     }
     '''
