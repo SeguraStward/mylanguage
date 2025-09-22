@@ -1,36 +1,32 @@
 #!/usr/bin/env python3
 """
-Alchemist IDE - Círculo de Transmutación Supremo
-IDE épico inspirado en Fullmetal Alchemist Brotherhood
-Con estilo alquímico transparente y imagen de fondo automática
+Alchemist IDE - Circulo de Transmutacion Supremo
+IDE minimalista inspirado en Fullmetal Alchemist Brotherhood
 """
 
 import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox, filedialog, Menu
 import os
-from PIL import Image, ImageTk
-from .lexer import AlchemistLexer
-from .parser import AlchemistParser
+import sys
+
+# Agregar el directorio padre al path para importar modulos
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from src.lexer import AlchemistLexer
+from src.parser import AlchemistParser
 
 class AlchemistIDE:
-    """IDE épico para el lenguaje Alchemist con estilo alquímico transparente"""
+    """IDE minimalista para el lenguaje Alchemist"""
     
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Alchemist")
+        self.root.title("Alchemist IDE")
         self.root.geometry("1400x900")
         
         # Variables para el estado del IDE
         self.current_file = None
         self.code_modified = False
         self.dark_mode = True  # Modo por defecto
-        self.bg_image = None
-        self.bg_photo = None
-        self.canvas_photo = None  # Para imagen redimensionada del canvas
-        self.editor_bg_photo = None  # Para imagen compuesta del editor
-        self.main_bg_label = None
-        self.editor_bg_label = None  # Para imagen del editor
-        self.canvas_bg_image = None  # Para imagen en canvas
         
         # Configurar estilos
         self.setup_styles()
@@ -40,821 +36,652 @@ class AlchemistIDE:
         self.setup_ui()
         self.setup_bindings()
         
-        # Cargar imagen de fondo después de crear la UI
-        self.load_theme_background()
-        
     def setup_styles(self):
-        """Configura los estilos según el modo con transparencias"""
+        """Configura los estilos con colores puros blanco y negro"""
+        # Fuente alquimica bold y minimalista
+        self.fonts = {
+            'main': ('Trebuchet MS', 11, 'bold'),      # Fuente principal
+            'code': ('Consolas', 10, 'bold'),          # Editor de codigo
+            'menu': ('Trebuchet MS', 9, 'bold'),       # Menús
+            'title': ('Trebuchet MS', 12, 'bold'),     # Titulos
+            'button': ('Trebuchet MS', 9, 'bold')      # Botones
+        }
+        
         if self.dark_mode:
             self.colors = {
-                'bg_primary': '#000000',        # Negro para modo oscuro
-                'bg_transparent': '#000000',    # Fondo transparente
-                'fg_primary': '#ffffff',        # Texto blanco
-                'fg_secondary': '#cccccc',      # Gris claro
-                'border_subtle': '#333333',     # Bordes apenas visibles
-                'button_bg': '#1a1a1a',        # Botones visibles
-                'button_fg': '#ffffff',
-                'button_active': '#2a2a2a',
-                'select_bg': '#333333',
-                'select_fg': '#ffffff'
+                'bg_primary': '#000000',        # Negro puro
+                'fg_primary': '#FFFFFF',        # Blanco puro
+                'bg_secondary': '#000000',      # Negro puro para areas secundarias
+                'fg_secondary': '#FFFFFF',      # Blanco puro
+                'border': '#FFFFFF',            # Bordes blancos
+                'button_bg': '#000000',         # Botones negros
+                'button_fg': '#FFFFFF',         # Texto blanco en botones
+                'button_active': '#333333',     # Boton activo
+                'select_bg': '#FFFFFF',         # Seleccion blanca
+                'select_fg': '#000000',         # Texto negro en seleccion
+                'tab_bg': '#FFFFFF',            # Tabs blancos puros
+                'tab_fg': '#000000',            # Texto negro en tabs
+                'tab_active_bg': '#FFFFFF',     # Tab activo blanco
+                'tab_active_fg': '#000000'      # Texto negro en tab activo
             }
         else:
             self.colors = {
-                'bg_primary': '#ffffff',        # Blanco para modo claro
-                'bg_transparent': '#ffffff',    # Fondo transparente
-                'fg_primary': '#000000',        # Texto negro
-                'fg_secondary': '#333333',      # Gris oscuro
-                'border_subtle': '#cccccc',     # Bordes apenas visibles
-                'button_bg': '#e0e0e0',        # Botones visibles
-                'button_fg': '#000000',
-                'button_active': '#d0d0d0',
-                'select_bg': '#cccccc',
-                'select_fg': '#000000'
+                'bg_primary': '#FFFFFF',        # Blanco puro
+                'fg_primary': '#000000',        # Negro puro
+                'bg_secondary': '#FFFFFF',      # Blanco puro para areas secundarias
+                'fg_secondary': '#000000',      # Negro puro
+                'border': '#000000',            # Bordes negros
+                'button_bg': '#FFFFFF',         # Botones blancos
+                'button_fg': '#000000',         # Texto negro en botones
+                'button_active': '#CCCCCC',     # Boton activo
+                'select_bg': '#000000',         # Seleccion negra
+                'select_fg': '#FFFFFF',         # Texto blanco en seleccion
+                'tab_bg': '#FFFFFF',            # Tabs blancos puros
+                'tab_fg': '#000000',            # Texto negro en tabs
+                'tab_active_bg': '#FFFFFF',     # Tab activo blanco
+                'tab_active_fg': '#000000'      # Texto negro en tab activo
             }
         
+        # Configurar el root
         self.root.configure(bg=self.colors['bg_primary'])
         
-    def load_theme_background(self):
-        """Cargar imagen de fondo según el tema actual"""
-        try:
-            # Nombre de archivo según el modo (exactamente como los tienes)
-            filename = 'BLACK.jpeg' if self.dark_mode else 'WHITE.jpeg'
-            
-            # Obtener directorio actual (src/)
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            project_root = os.path.dirname(current_dir)  # Subir un nivel desde src/
-            
-            # Posibles ubicaciones de la imagen (buscar primero en src/)
-            possible_paths = [
-                # En el directorio src/ (donde están realmente)
-                os.path.join(current_dir, filename),
-                # En la raíz del proyecto
-                os.path.join(project_root, filename),
-                # En el directorio actual de trabajo
-                os.path.join(os.getcwd(), filename),
-                # También buscar versiones en minúsculas
-                os.path.join(current_dir, filename.lower()),
-                os.path.join(project_root, filename.lower())
-            ]
-            
-            image_path = None
-            for path in possible_paths:
-                print(f"🔍 Buscando: {path}")
-                if os.path.exists(path):
-                    image_path = path
-                    print(f"✅ IMAGEN ENCONTRADA: {path}")
-                    break
-            
-            if image_path:
-                # Cargar y redimensionar imagen
-                image = Image.open(image_path)
-                # Redimensionar para que cubra la ventana pero mantenga proporción
-                image = image.resize((700, 500), Image.Resampling.LANCZOS)
-                self.bg_photo = ImageTk.PhotoImage(image)
-                
-                # Aplicar imagen de fondo principal
-                self.apply_main_background()
-                # Aplicar imagen específicamente al editor si ya existe
-                if hasattr(self, 'editor_container'):
-                    self.apply_editor_background()
-                print(f"🎉 Imagen aplicada correctamente: {filename}")
-            else:
-                print(f"❌ NO SE ENCONTRÓ: {filename}")
-                print("Ubicaciones buscadas:")
-                for path in possible_paths:
-                    print(f"  - {path}")
-                
-        except Exception as e:
-            print(f"❌ Error cargando imagen de fondo: {e}")
-    
-    def apply_main_background(self):
-        """Aplicar imagen de fondo principal centrada"""
-        if self.bg_photo:
-            # Eliminar imagen anterior si existe
-            if self.main_bg_label:
-                self.main_bg_label.destroy()
-            
-            # Crear label de fondo principal
-            self.main_bg_label = tk.Label(
-                self.root,
-                image=self.bg_photo,
-                bg=self.colors['bg_primary']
-            )
-            # Centrar la imagen en toda la ventana
-            self.main_bg_label.place(relx=0.5, rely=0.5, anchor='center')
-            # Enviar al fondo
-            self.main_bg_label.lower()
-            
     def setup_menu(self):
-        """Configura el menú principal transparente"""
-        menubar = Menu(
-            self.root, 
-            bg=self.colors['bg_transparent'], 
-            fg=self.colors['fg_primary'],
-            activebackground=self.colors['button_active'],
-            relief=tk.FLAT,
-            bd=0
-        )
+        """Configura la barra de menú con todos los botones integrados"""
+        menubar = Menu(self.root, 
+                      bg=self.colors['bg_primary'], 
+                      fg=self.colors['fg_primary'],
+                      font=self.fonts['menu'])
         self.root.config(menu=menubar)
         
         # Menú Archivo
-        file_menu = Menu(
-            menubar, 
-            tearoff=0, 
-            bg=self.colors['bg_transparent'], 
-            fg=self.colors['fg_primary'],
-            relief=tk.FLAT
-        )
+        file_menu = Menu(menubar, tearoff=0,
+                        bg=self.colors['bg_primary'], 
+                        fg=self.colors['fg_primary'],
+                        font=self.fonts['menu'])
         menubar.add_cascade(label="Archivo", menu=file_menu)
         file_menu.add_command(label="Nuevo", command=self.new_file, accelerator="Ctrl+N")
         file_menu.add_command(label="Abrir", command=self.open_file, accelerator="Ctrl+O")
         file_menu.add_command(label="Guardar", command=self.save_file, accelerator="Ctrl+S")
+        file_menu.add_command(label="Guardar Como", command=self.save_file_as, accelerator="Ctrl+Shift+S")
         file_menu.add_separator()
-        file_menu.add_command(label="Salir", command=self.root.quit)
+        file_menu.add_command(label="Salir", command=self.on_closing, accelerator="Ctrl+Q")
         
-        # Menú Herramientas
-        tools_menu = Menu(
-            menubar, 
-            tearoff=0, 
-            bg=self.colors['bg_transparent'], 
-            fg=self.colors['fg_primary'],
-            relief=tk.FLAT
-        )
-        menubar.add_cascade(label="Herramientas", menu=tools_menu)
-        tools_menu.add_command(label="Analizar Elementos", command=self.test_lexer)
-        tools_menu.add_command(label="Verificar Estructura", command=self.test_parser)
+        # Menú Codigo (movido desde botones)
+        code_menu = Menu(menubar, tearoff=0,
+                        bg=self.colors['bg_primary'], 
+                        fg=self.colors['fg_primary'],
+                        font=self.fonts['menu'])
+        menubar.add_cascade(label="Analisis", menu=code_menu)
+        code_menu.add_command(label="Analisis Lexico", command=self.lexical_analysis, accelerator="F6")
+        code_menu.add_command(label="Analisis Sintactico", command=self.syntactic_analysis, accelerator="F7")
+        code_menu.add_separator()
+        code_menu.add_command(label="Limpiar Salidas", command=self.clear_outputs)
+        
+        # Menú Ejemplos (movido desde botones)
+        examples_menu = Menu(menubar, tearoff=0,
+                           bg=self.colors['bg_primary'], 
+                           fg=self.colors['fg_primary'],
+                           font=self.fonts['menu'])
+        menubar.add_cascade(label="Ejemplos", menu=examples_menu)
+        examples_menu.add_command(label="Cargar Ejemplo", command=self.load_example)
+        
+        # Menú Ayuda (movido desde botones)
+        help_menu = Menu(menubar, tearoff=0,
+                        bg=self.colors['bg_primary'], 
+                        fg=self.colors['fg_primary'],
+                        font=self.fonts['menu'])
+        menubar.add_cascade(label="Ayuda", menu=help_menu)
+        help_menu.add_command(label="Palabras Sagradas", command=self.show_reserved_words)
+        help_menu.add_command(label="Sintaxis", command=self.show_control_syntax)
+        help_menu.add_command(label="Informacion", command=self.show_welcome_info)
+        help_menu.add_command(label="Acerca de", command=self.show_about)
         
         # Menú Apariencia
-        view_menu = Menu(
-            menubar, 
-            tearoff=0, 
-            bg=self.colors['bg_transparent'], 
-            fg=self.colors['fg_primary'],
-            relief=tk.FLAT
-        )
+        view_menu = Menu(menubar, tearoff=0,
+                        bg=self.colors['bg_primary'], 
+                        fg=self.colors['fg_primary'],
+                        font=self.fonts['menu'])
         menubar.add_cascade(label="Apariencia", menu=view_menu)
         view_menu.add_command(label="Modo Oscuro", command=lambda: self.toggle_theme(True))
         view_menu.add_command(label="Modo Claro", command=lambda: self.toggle_theme(False))
         
-        # Ayuda
-        menubar.add_command(label="Acerca de", command=self.show_about)
-        
     def setup_ui(self):
-        """Configura la interfaz principal transparente"""
-        # Frame principal transparente
-        main_frame = tk.Frame(
-            self.root, 
-            bg=self.colors['bg_transparent'],
-            relief=tk.FLAT,
-            bd=0
-        )
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
+        """Configura la interfaz de usuario minimalista"""
+        # Frame principal sin titulo grande
+        main_frame = tk.Frame(self.root, bg=self.colors['bg_primary'])
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # Título del IDE - semi-transparente
-        title_frame = tk.Frame(
-            main_frame, 
-            bg=self.colors['bg_transparent'], 
-            relief=tk.FLAT,
-            bd=1,
-            highlightbackground=self.colors['border_subtle'],
-            highlightthickness=1
-        )
-        title_frame.pack(fill=tk.X, pady=(0, 8))
+        # Panel superior: Editor de codigo
+        self.setup_code_editor(main_frame)
         
-        title_label = tk.Label(
-            title_frame,
-            text="ALCHEMIST IDE",
-            font=('Arial', 16, 'bold'),
-            bg=self.colors['bg_transparent'],
-            fg=self.colors['fg_primary'],
-            pady=8
-        )
-        title_label.pack()
-        
-        subtitle_label = tk.Label(
-            title_frame,
-            text="Para obtener algo, algo de igual valor debe ser perdido",
-            font=('Arial', 10, 'italic'),
-            bg=self.colors['bg_transparent'],
-            fg=self.colors['fg_secondary']
-        )
-        subtitle_label.pack()
-        
-        # Panel de botones (visible)
-        self.setup_button_panel(main_frame)
-        
-        # Panel principal dividido - transparente
-        main_paned = tk.PanedWindow(
-            main_frame, 
-            orient=tk.HORIZONTAL, 
-            bg=self.colors['bg_transparent'],
-            sashwidth=3,
-            sashrelief=tk.FLAT,
-            relief=tk.FLAT,
-            bd=0
-        )
-        main_paned.pack(fill=tk.BOTH, expand=True)
-        
-        # Frame izquierdo transparente
-        left_frame = tk.Frame(main_paned, bg=self.colors['bg_transparent'])
-        main_paned.add(left_frame, width=800)
-        
-        # Frame derecho transparente
-        right_frame = tk.Frame(main_paned, bg=self.colors['bg_transparent'])
-        main_paned.add(right_frame, width=600)
-        
-        self.setup_code_editor(left_frame)
-        self.setup_output_panel(right_frame)
-        
-    def setup_button_panel(self, parent):
-        """Configura el panel de botones (visibles pero compactos)"""
-        button_frame = tk.Frame(
-            parent, 
-            bg=self.colors['button_bg'], 
-            relief=tk.RIDGE, 
-            bd=2
-        )
-        button_frame.pack(fill=tk.X, pady=(0, 8))
-        
-        # Botones principales - compactos pero visibles
-        tk.Button(
-            button_frame,
-            text="Analizar",
-            command=self.test_lexer,
-            font=('Arial', 9, 'bold'),
-            bg=self.colors['button_bg'],
-            fg=self.colors['button_fg'],
-            activebackground=self.colors['button_active'],
-            activeforeground=self.colors['fg_primary'],
-            relief=tk.RAISED,
-            bd=2,
-            padx=10,
-            pady=2
-        ).pack(side=tk.LEFT, padx=3, pady=3)
-        
-        tk.Button(
-            button_frame,
-            text="Verificar",
-            command=self.test_parser,
-            font=('Arial', 9, 'bold'),
-            bg=self.colors['button_bg'],
-            fg=self.colors['button_fg'],
-            activebackground=self.colors['button_active'],
-            activeforeground=self.colors['fg_primary'],
-            relief=tk.RAISED,
-            bd=2,
-            padx=10,
-            pady=2
-        ).pack(side=tk.LEFT, padx=3, pady=3)
-        
-        # Separador sutil
-        separator = tk.Frame(button_frame, width=2, bg=self.colors['border_subtle'])
-        separator.pack(side=tk.LEFT, fill=tk.Y, padx=6, pady=3)
-        
-        # Botones de ayuda
-        tk.Button(
-            button_frame,
-            text="Palabras",
-            command=self.show_reserved_words,
-            font=('Arial', 9, 'bold'),
-            bg=self.colors['button_bg'],
-            fg=self.colors['button_fg'],
-            activebackground=self.colors['button_active'],
-            activeforeground=self.colors['fg_primary'],
-            relief=tk.RAISED,
-            bd=2,
-            padx=10,
-            pady=2
-        ).pack(side=tk.LEFT, padx=3, pady=3)
-        
-        tk.Button(
-            button_frame,
-            text="Sintaxis",
-            command=self.show_control_syntax,
-            font=('Arial', 9, 'bold'),
-            bg=self.colors['button_bg'],
-            fg=self.colors['button_fg'],
-            activebackground=self.colors['button_active'],
-            activeforeground=self.colors['fg_primary'],
-            relief=tk.RAISED,
-            bd=2,
-            padx=10,
-            pady=2
-        ).pack(side=tk.LEFT, padx=3, pady=3)
-        
-        tk.Button(
-            button_frame,
-            text="Ejemplos",
-            command=self.load_example,
-            font=('Arial', 9, 'bold'),
-            bg=self.colors['button_bg'],
-            fg=self.colors['button_fg'],
-            activebackground=self.colors['button_active'],
-            activeforeground=self.colors['fg_primary'],
-            relief=tk.RAISED,
-            bd=2,
-            padx=10,
-            pady=2
-        ).pack(side=tk.LEFT, padx=3, pady=3)
+        # Panel inferior: Salidas con notebook y tabs blancos
+        self.setup_output_panel(main_frame)
         
     def setup_code_editor(self, parent):
-        """Configura el editor de código con imagen de fondo visible - NUEVA ESTRATEGIA"""
-        # Marco del editor - completamente transparente
+        """Configura el editor de codigo minimalista"""
+        # Frame del editor
         editor_frame = tk.LabelFrame(
             parent,
-            text="Editor de Código",
-            font=('Arial', 10, 'bold'),
+            text="Editor de Codigo",
+            font=self.fonts['title'],
             bg=self.colors['bg_primary'],
             fg=self.colors['fg_primary'],
-            relief=tk.FLAT,
+            relief=tk.SOLID,
             bd=1
         )
-        editor_frame.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
+        editor_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 5))
         
-        # NUEVA ESTRATEGIA: Canvas con imagen de fondo y text widget encima
-        self.editor_canvas = tk.Canvas(
-            editor_frame,
-            bg=self.colors['bg_primary'],
-            highlightthickness=0,
-            relief=tk.FLAT,
-            bd=0
-        )
-        self.editor_canvas.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
-        
-        # Frame para el texto que va encima del canvas
-        self.editor_container = tk.Frame(self.editor_canvas, bg=self.colors['bg_primary'])
-        
-        # Crear window en canvas para el frame
-        self.canvas_window = self.editor_canvas.create_window(
-            0, 0, anchor="nw", window=self.editor_container
-        )
-        
-        # Editor de texto con fondo que permite ver a través
+        # Editor de texto
         self.code_editor = scrolledtext.ScrolledText(
-            self.editor_container,
+            editor_frame,
             wrap=tk.NONE,
-            font=('Consolas', 10),
-            bg=self.colors['bg_primary'],  # Mismo color que el canvas
+            font=self.fonts['code'],
+            bg=self.colors['bg_primary'],
             fg=self.colors['fg_primary'],
             insertbackground=self.colors['fg_primary'],
             selectbackground=self.colors['select_bg'],
             selectforeground=self.colors['select_fg'],
             relief=tk.FLAT,
             bd=0,
-            highlightthickness=0
+            highlightthickness=1,
+            highlightcolor=self.colors['border']
         )
-        self.code_editor.pack(fill=tk.BOTH, expand=True)
+        self.code_editor.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # Configurar el canvas para que se redimensione con el contenido
-        def configure_canvas(event=None):
-            # Actualizar el tamaño del frame en el canvas
-            self.editor_canvas.configure(scrollregion=self.editor_canvas.bbox("all"))
-            # Hacer que el frame del editor ocupe todo el canvas
-            canvas_width = self.editor_canvas.winfo_width()
-            canvas_height = self.editor_canvas.winfo_height()
-            self.editor_canvas.itemconfig(self.canvas_window, width=canvas_width, height=canvas_height)
-        
-        self.editor_canvas.bind('<Configure>', configure_canvas)
-        self.editor_container.bind('<Configure>', configure_canvas)
-        
-        # Aplicar imagen de fondo al canvas después de que se configure
-        self.root.after(100, self.apply_canvas_background)
-        
-        # Código inicial
-        initial_code = """// CÍRCULO DE TRANSMUTACIÓN SUPREMO
-// Fullmetal Alchemist Brotherhood
-
+        # Codigo inicial minimalista
+        initial_code = """// CiRCULO DE TRANSMUTACIoN
 Transmutation GateOfTruth() -> void {
-    Transmute("ACTIVANDO CÍRCULO ALQUÍMICO")
+    Solid power = 100
+    Inscription name = "Edward Elric"
     
-    Inscription alquimista = "Edward Elric"
-    Solid edad = 16
-    Principle esAlquimista = Accepted
+    Transmute("Poder: " + power)
+    Transmute("Alquimista: " + name)
     
-    Transmute("Alquimista: " + alquimista)
-    Transmute("Edad: " + edad + " años")
-    
-    Observe (edad >= 15 and esAlquimista == Accepted) {
-        Transmute("ACCESO CONCEDIDO")
-        
-        AlchemicCycle (Solid i = 1; i <= 3; i = i + 1) {
-            Transmute("Círculo " + i + " ACTIVADO")
-        }
-    } Inevitably {
-        Transmute("ACCESO DENEGADO")
+    Observe (power > 50) {
+        Transmute("Transmutacion exitosa")
     }
-    
-    Transmute("INTERCAMBIO EQUIVALENTE COMPLETADO")
 }"""
         
         self.code_editor.insert('1.0', initial_code)
         
-    def apply_canvas_background(self):
-        """Aplicar imagen de fondo al canvas del editor"""
-        if hasattr(self, 'bg_photo') and self.bg_photo and hasattr(self, 'editor_canvas'):
-            try:
-                # Eliminar imagen anterior si existe
-                if hasattr(self, 'canvas_bg_image'):
-                    self.editor_canvas.delete(self.canvas_bg_image)
-                
-                # Obtener dimensiones del canvas
-                self.editor_canvas.update_idletasks()
-                canvas_width = self.editor_canvas.winfo_width()
-                canvas_height = self.editor_canvas.winfo_height()
-                
-                if canvas_width > 1 and canvas_height > 1:  # Asegurar que el canvas tiene dimensiones válidas
-                    # Redimensionar imagen para ajustarse al canvas
-                    filename = 'BLACK.jpeg' if self.dark_mode else 'WHITE.jpeg'
-                    image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
-                    
-                    # Cargar y redimensionar imagen
-                    pil_image = Image.open(image_path)
-                    resized_image = pil_image.resize((canvas_width, canvas_height), Image.Resampling.LANCZOS)
-                    self.canvas_photo = ImageTk.PhotoImage(resized_image)
-                    
-                    # Crear imagen de fondo en el canvas centrada
-                    self.canvas_bg_image = self.editor_canvas.create_image(
-                        canvas_width // 2, canvas_height // 2, 
-                        image=self.canvas_photo
-                    )
-                    
-                    # Asegurar que la imagen esté en el fondo
-                    self.editor_canvas.tag_lower(self.canvas_bg_image)
-                    
-                    print(f"🎨 Imagen {filename} aplicada al canvas ({canvas_width}x{canvas_height})")
-                    
-                    # Hacer el frame del editor transparente
-                    if hasattr(self, 'editor_container'):
-                        self.editor_container.configure(bg='')  # Transparente
-                    
-                    # Configurar el text widget para máxima transparencia
-                    if hasattr(self, 'code_editor'):
-                        # Usar colores que contrasten bien con la imagen de fondo
-                        if self.dark_mode:
-                            text_bg = '#2a2a2a'  # Gris muy oscuro, semi-transparente
-                            text_fg = '#ffffff'
-                        else:
-                            text_bg = '#e8e8e8'  # Gris muy claro, semi-transparente
-                            text_fg = '#000000'
-                        
-                        self.code_editor.configure(
-                            bg=text_bg,
-                            fg=text_fg,
-                            insertbackground=text_fg,
-                            selectbackground='#4a4a4a' if self.dark_mode else '#cccccc',
-                            selectforeground=text_fg
-                        )
-                        
-                        print(f"🖌️ Editor configurado con fondo {text_bg}")
-                
-            except Exception as e:
-                print(f"❌ Error aplicando imagen al canvas: {e}")
-                import traceback
-                traceback.print_exc()
-
-    def apply_editor_background(self):
-        """Aplicar imagen de fondo específicamente al editor de código - NUEVA VERSIÓN"""
-        # Esta función ahora llama a apply_canvas_background
-        if hasattr(self, 'editor_canvas'):
-            self.apply_canvas_background()
-        else:
-            print("⚠️ Canvas del editor no está listo aún")
-            if self.dark_mode:
-                # En modo oscuro, usar gris muy oscuro semi-transparente
-                editor_bg = '#1a1a1a'  # Gris muy oscuro en lugar de negro
-            else:
-                # En modo claro, usar gris muy claro semi-transparente  
-                editor_bg = '#f8f8f8'  # Gris muy claro en lugar de blanco puro
-                
-            self.code_editor.configure(bg=editor_bg)
-        
     def setup_output_panel(self, parent):
-        """Configura el panel de salida transparente"""
-        # Notebook transparente
-        style = ttk.Style()
-        style.theme_use('clam')
-        style.configure('Transparent.TNotebook', 
-                       background=self.colors['bg_transparent'],
-                       borderwidth=0)
-        style.configure('Transparent.TNotebook.Tab', 
-                       background=self.colors['bg_transparent'],
-                       foreground=self.colors['fg_primary'],
-                       padding=[12, 8])
+        """Configura el panel de salidas con tabs blancos puros"""
+        # Frame para las salidas
+        output_frame = tk.Frame(parent, bg=self.colors['bg_primary'])
+        output_frame.pack(fill=tk.BOTH, expand=False, pady=(5, 0))
         
-        self.notebook = ttk.Notebook(parent, style='Transparent.TNotebook')
-        self.notebook.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
+        # Notebook con estilo personalizado para tabs blancos
+        self.setup_notebook_style()
         
-        # Tab de errores - transparente
-        error_frame = tk.Frame(
-            self.notebook, 
-            bg=self.colors['bg_transparent'],
-            relief=tk.FLAT,
-            bd=1,
-            highlightbackground=self.colors['border_subtle'],
-            highlightthickness=1
-        )
-        self.notebook.add(error_frame, text="Errores")
+        self.notebook = ttk.Notebook(output_frame, style='Custom.TNotebook')
+        self.notebook.pack(fill=tk.BOTH, expand=True)
         
-        self.error_output = scrolledtext.ScrolledText(
-            error_frame,
-            font=('Consolas', 9),
-            bg=self.colors['bg_transparent'],
-            fg=self.colors['fg_secondary'],
-            relief=tk.FLAT,
-            bd=0,
-            highlightthickness=1,
-            highlightcolor=self.colors['border_subtle'],
-            highlightbackground=self.colors['border_subtle']
-        )
-        self.error_output.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
-        
-        # Tab de salida - transparente
-        output_frame = tk.Frame(
-            self.notebook, 
-            bg=self.colors['bg_transparent'],
-            relief=tk.FLAT,
-            bd=1,
-            highlightbackground=self.colors['border_subtle'],
-            highlightthickness=1
-        )
-        self.notebook.add(output_frame, text="Salida")
-        
-        self.program_output = scrolledtext.ScrolledText(
-            output_frame,
-            font=('Consolas', 9),
-            bg=self.colors['bg_transparent'],
-            fg=self.colors['fg_primary'],
-            relief=tk.FLAT,
-            bd=0,
-            highlightthickness=1,
-            highlightcolor=self.colors['border_subtle'],
-            highlightbackground=self.colors['border_subtle']
-        )
-        self.program_output.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
-        
-        # Tab de información - transparente
-        info_frame = tk.Frame(
-            self.notebook, 
-            bg=self.colors['bg_transparent'],
-            relief=tk.FLAT,
-            bd=1,
-            highlightbackground=self.colors['border_subtle'],
-            highlightthickness=1
-        )
-        self.notebook.add(info_frame, text="Información")
+        # Tab 1: Informacion
+        info_frame = tk.Frame(self.notebook, bg=self.colors['bg_primary'])
+        self.notebook.add(info_frame, text="ℹ️ Informacion")
         
         self.info_output = scrolledtext.ScrolledText(
             info_frame,
-            font=('Consolas', 9),
-            bg=self.colors['bg_transparent'],
-            fg=self.colors['fg_secondary'],
+            height=15,
+            font=self.fonts['main'],
+            bg=self.colors['bg_primary'],
+            fg=self.colors['fg_primary'],
             relief=tk.FLAT,
-            bd=0,
-            highlightthickness=1,
-            highlightcolor=self.colors['border_subtle'],
-            highlightbackground=self.colors['border_subtle']
+            bd=0
         )
-        self.info_output.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
+        self.info_output.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # Mostrar información de bienvenida
+        # Tab 2: Errores
+        error_frame = tk.Frame(self.notebook, bg=self.colors['bg_primary'])
+        self.notebook.add(error_frame, text="⚠️ Errores")
+        
+        self.error_output = scrolledtext.ScrolledText(
+            error_frame,
+            height=15,
+            font=self.fonts['main'],
+            bg=self.colors['bg_primary'],
+            fg=self.colors['fg_primary'],
+            relief=tk.FLAT,
+            bd=0
+        )
+        self.error_output.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Tab 3: Programa
+        program_frame = tk.Frame(self.notebook, bg=self.colors['bg_primary'])
+        self.notebook.add(program_frame, text="🖥️ Programa")
+        
+        self.program_output = scrolledtext.ScrolledText(
+            program_frame,
+            height=15,
+            font=self.fonts['main'],
+            bg=self.colors['bg_primary'],
+            fg=self.colors['fg_primary'],
+            relief=tk.FLAT,
+            bd=0
+        )
+        self.program_output.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Mostrar informacion de bienvenida
         self.show_welcome_info()
         
-    def toggle_theme(self, dark_mode):
-        """Cambiar entre modo oscuro y claro"""
-        self.dark_mode = dark_mode
-        self.setup_styles()
-        self.load_theme_background()  # Cargar nueva imagen
-        self.refresh_ui()
+    def setup_notebook_style(self):
+        """Configura estilo personalizado para tabs blancos puros"""
+        style = ttk.Style()
         
-    def refresh_ui(self):
-        """Refrescar la interfaz con nuevos colores"""
-        # Actualizar todos los widgets principales
-        self.root.configure(bg=self.colors['bg_primary'])
+        # Configurar tema basico
+        style.theme_use('clam')
         
-        # Actualizar canvas del editor si existe
-        if hasattr(self, 'editor_canvas') and self.editor_canvas:
-            self.editor_canvas.configure(bg=self.colors['bg_primary'])
-            self.apply_canvas_background()  # Reaplicar imagen de fondo
+        # Estilo para el notebook con tabs blancos puros
+        style.configure('Custom.TNotebook', 
+                       background=self.colors['bg_primary'],
+                       borderwidth=0,
+                       relief='flat')
         
-        # Actualizar editor solo si ya existe
-        if hasattr(self, 'code_editor') and self.code_editor:
-            try:
-                self.code_editor.configure(
-                    bg=self.colors['bg_primary'],  # Mismo color que el canvas
-                    fg=self.colors['fg_primary'],
-                    insertbackground=self.colors['fg_primary'],
-                    selectbackground=self.colors['select_bg'],
-                    selectforeground=self.colors['select_fg']
-                )
-            except:
-                # Fallback
-                self.code_editor.configure(
-                    bg=self.colors['bg_transparent'],
-                    fg=self.colors['fg_primary'],
-                    insertbackground=self.colors['fg_primary'],
-                    selectbackground=self.colors['select_bg'],
-                    selectforeground=self.colors['select_fg']
-                )
+        style.configure('Custom.TNotebook.Tab',
+                       background=self.colors['tab_bg'],          # Blanco puro
+                       foreground=self.colors['tab_fg'],          # Negro
+                       padding=[10, 5],
+                       font=self.fonts['menu'],
+                       borderwidth=1,
+                       relief='solid')
         
-        # Actualizar paneles de salida solo si existen
-        if hasattr(self, 'error_output') and self.error_output:
-            self.error_output.configure(
-                bg=self.colors['bg_transparent'],
-                fg=self.colors['fg_secondary']
-            )
+        # Tab activo
+        style.map('Custom.TNotebook.Tab',
+                 background=[('selected', self.colors['tab_active_bg'])],  # Blanco puro
+                 foreground=[('selected', self.colors['tab_active_fg'])],  # Negro
+                 borderwidth=[('selected', 2)])
         
-        if hasattr(self, 'program_output') and self.program_output:
-            self.program_output.configure(
-                bg=self.colors['bg_transparent'],
-                fg=self.colors['fg_primary']
-            )
-        
-        if hasattr(self, 'info_output') and self.info_output:
-            self.info_output.configure(
-                bg=self.colors['bg_transparent'],
-                fg=self.colors['fg_secondary']
-            )
-        
-        # Reaplicar imagen de fondo al editor solo si existe
-        if hasattr(self, 'editor_container') and hasattr(self, 'bg_photo') and self.bg_photo:
-            self.apply_editor_background()
-    
     def setup_bindings(self):
         """Configura los atajos de teclado"""
         self.root.bind('<Control-n>', lambda e: self.new_file())
         self.root.bind('<Control-o>', lambda e: self.open_file())
         self.root.bind('<Control-s>', lambda e: self.save_file())
-        self.root.bind('<F9>', lambda e: self.test_lexer())
-        self.root.bind('<F5>', lambda e: self.test_parser())
-    
+        self.root.bind('<Control-Shift-S>', lambda e: self.save_file_as())
+        self.root.bind('<Control-q>', lambda e: self.on_closing())
+        self.root.bind('<F6>', lambda e: self.lexical_analysis())
+        self.root.bind('<F7>', lambda e: self.syntactic_analysis())
+        
+        # Detectar cambios en el codigo
+        self.code_editor.bind('<KeyPress>', self.on_text_change)
+        self.code_editor.bind('<Button-1>', self.on_text_change)
+        
+    def on_text_change(self, event=None):
+        """Detectar cambios en el codigo"""
+        self.code_modified = True
+        self.update_title()
+        
+    def update_title(self):
+        """Actualizar titulo de la ventana"""
+        title = "Alchemist IDE"
+        if self.current_file:
+            title += f" - {os.path.basename(self.current_file)}"
+        if self.code_modified:
+            title += " *"
+        self.root.title(title)
+        
     # ========================================
-    # MÉTODOS DE ARCHIVO
+    # OPERACIONES DE ARCHIVO
     # ========================================
     
     def new_file(self):
         """Crear nuevo archivo"""
+        if self.code_modified:
+            if not messagebox.askyesno("Archivo sin guardar", 
+                                     "¿Guardar cambios antes de crear uno nuevo?"):
+                return
+        
         self.code_editor.delete('1.0', tk.END)
         self.current_file = None
+        self.code_modified = False
         self.clear_outputs()
+        self.update_title()
         
     def open_file(self):
-        """Abrir archivo existente"""
+        """Abrir archivo"""
         file_path = filedialog.askopenfilename(
             title="Abrir archivo Alchemist",
-            filetypes=[("Archivos Alchemist", "*.alc"), ("Todos los archivos", "*.*")]
+            filetypes=[("Archivos Alchemist", "*.alch"), ("Todos los archivos", "*.*")]
         )
+        
         if file_path:
             try:
                 with open(file_path, 'r', encoding='utf-8') as file:
                     content = file.read()
-                    self.code_editor.delete('1.0', tk.END)
-                    self.code_editor.insert('1.0', content)
-                    self.current_file = file_path
-                    self.clear_outputs()
+                
+                self.code_editor.delete('1.0', tk.END)
+                self.code_editor.insert('1.0', content)
+                
+                self.current_file = file_path
+                self.code_modified = False
+                self.update_title()
+                self.clear_outputs()
+                
             except Exception as e:
-                messagebox.showerror("Error", f"No se pudo abrir el archivo:\n{str(e)}")
+                messagebox.showerror("Error", f"Error al abrir archivo: {e}")
                 
     def save_file(self):
-        """Guardar archivo actual"""
+        """Guardar archivo"""
         if not self.current_file:
-            self.current_file = filedialog.asksaveasfilename(
-                title="Guardar archivo Alchemist",
-                defaultextension=".alc",
-                filetypes=[("Archivos Alchemist", "*.alc"), ("Todos los archivos", "*.*")]
-            )
+            return self.save_file_as()
         
-        if self.current_file:
-            try:
-                content = self.code_editor.get('1.0', tk.END)
-                with open(self.current_file, 'w', encoding='utf-8') as file:
-                    file.write(content)
-                messagebox.showinfo("Éxito", "Archivo guardado correctamente")
-            except Exception as e:
-                messagebox.showerror("Error", f"No se pudo guardar:\n{str(e)}")
-    
+        try:
+            content = self.code_editor.get('1.0', tk.END)
+            with open(self.current_file, 'w', encoding='utf-8') as file:
+                file.write(content)
+            
+            self.code_modified = False
+            self.update_title()
+            messagebox.showinfo("exito", "Archivo guardado correctamente")
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al guardar archivo: {e}")
+            
+    def save_file_as(self):
+        """Guardar archivo como"""
+        file_path = filedialog.asksaveasfilename(
+            title="Guardar archivo Alchemist",
+            defaultextension=".alch",
+            filetypes=[("Archivos Alchemist", "*.alch"), ("Todos los archivos", "*.*")]
+        )
+        
+        if file_path:
+            self.current_file = file_path
+            self.save_file()
+            
     # ========================================
-    # ANÁLISIS
+    # ANaLISIS DE CoDIGO
     # ========================================
     
-    def test_lexer(self):
-        """Analizar elementos del código"""
+    def lexical_analysis(self):
+        """Realizar solo analisis lexico"""
         self.clear_outputs()
-        code = self.code_editor.get('1.0', tk.END)
+        code = self.code_editor.get('1.0', tk.END).strip()
+        
+        if not code:
+            self.error_output.insert('1.0', "No hay codigo para analizar")
+            return
         
         try:
             lexer = AlchemistLexer()
             tokens = lexer.tokenize(code)
             
-            output = "=== ANÁLISIS LÉXICO ===\n\n"
-            output += f"Total de tokens: {len(tokens)}\n\n"
+            self.info_output.insert('1.0', "ANaLISIS LeXICO COMPLETADO\n")
+            self.info_output.insert(tk.END, f"Tokens generados: {len(tokens)}\n\n")
             
-            # Contar tipos de tokens
+            # Mostrar tokens agrupados por tipo
             token_counts = {}
-            for token in tokens:
-                if token.type.name not in ['WHITESPACE', 'COMMENT']:
-                    token_counts[token.type.name] = token_counts.get(token.type.name, 0) + 1
+            token_list = []
             
-            output += "Tokens por tipo:\n"
+            for token in tokens:
+                token_type = token.type.name
+                token_counts[token_type] = token_counts.get(token_type, 0) + 1
+                token_list.append(f"  {token.type.name}: '{token.value}' (linea {token.line})")
+            
+            self.info_output.insert(tk.END, "Resumen por tipo:\n")
             for token_type, count in sorted(token_counts.items()):
-                output += f"   {token_type}: {count}\n"
+                self.info_output.insert(tk.END, f"  {token_type}: {count}\n")
             
-            output += "\nSecuencia de tokens (primeros 25):\n"
-            count = 0
-            for token in tokens:
-                if token.type.name not in ['WHITESPACE', 'NEWLINE'] and count < 25:
-                    output += f"{count+1:3d}. {token.type.name:15} -> '{token.value}'\n"
-                    count += 1
-                    
-            output += "\nAnálisis léxico completado."
+            self.info_output.insert(tk.END, "\nListado completo de tokens:\n")
+            for token_info in token_list:
+                self.info_output.insert(tk.END, f"{token_info}\n")
             
-            self.program_output.delete('1.0', tk.END)
-            self.program_output.insert('1.0', output)
+            self.info_output.insert(tk.END, "\nANaLISIS LeXICO EXITOSO")
             
         except Exception as e:
-            error_msg = f"ERROR EN ANÁLISIS LÉXICO:\n\n{str(e)}"
-            self.error_output.delete('1.0', tk.END)
-            self.error_output.insert('1.0', error_msg)
-            
-    def test_parser(self):
-        """Verificar estructura del código"""
+            self.error_output.insert('1.0', f"Error en analisis lexico: {str(e)}")
+    
+    def syntactic_analysis(self):
+        """Realizar solo analisis sintactico (requiere que el lexico sea exitoso)"""
         self.clear_outputs()
-        code = self.code_editor.get('1.0', tk.END)
+        code = self.code_editor.get('1.0', tk.END).strip()
+        
+        if not code:
+            self.error_output.insert('1.0', "No hay codigo para analizar")
+            return
         
         try:
+            # Primero verificar que el analisis lexico funcione
+            lexer = AlchemistLexer()
+            tokens = lexer.tokenize(code)
+            
+            # Realizar analisis sintactico
             parser = AlchemistParser()
             ast = parser.parse(code)
             
-            output = "=== ANÁLISIS SINTÁCTICO ===\n\n"
-            output += f"Funciones encontradas: {len(ast.functions)}\n\n"
+            self.info_output.insert('1.0', "ANALISIS SINTACTICO COMPLETADO\n")
+            self.info_output.insert(tk.END, "="*50 + "\n\n")
+            self.info_output.insert(tk.END, f"Funciones encontradas: {len(ast.functions)}\n\n")
             
-            for func in ast.functions:
-                output += f"Función: {func.name}\n"
-                params = ", ".join(f"{p.type} {p.name}" for p in func.parameters)
-                output += f"   Parámetros: ({params})\n"
-                output += f"   Retorna: {func.return_type}\n"
-                output += f"   Declaraciones: {len(func.body)}\n\n"
-                
-            output += "Estructura sintáctica correcta."
+            # Mostrar estructura del AST
+            self.info_output.insert(tk.END, "ESTRUCTURA DEL AST:\n")
+            self.info_output.insert(tk.END, "-"*30 + "\n")
+            ast_structure = self._get_ast_structure(ast, 0)
+            self.info_output.insert(tk.END, ast_structure)
             
-            self.program_output.delete('1.0', tk.END)
-            self.program_output.insert('1.0', output)
+            self.info_output.insert(tk.END, "\n" + "="*50 + "\n")
+            self.info_output.insert(tk.END, "ANALISIS SINTACTICO EXITOSO")
             
         except Exception as e:
-            error_msg = f"ERROR EN ANÁLISIS SINTÁCTICO:\n\n{str(e)}"
-            self.error_output.delete('1.0', tk.END)
-            self.error_output.insert('1.0', error_msg)
+            self.error_output.insert('1.0', f"Error en analisis sintactico: {str(e)}")
     
+    def _get_ast_structure(self, node, indent=0):
+        """Generar representación en texto de la estructura del AST"""
+        from src.parser import Program, Function, VariableDeclaration, Assignment, ObserveStatement, ForStatement, WhileStatement, ReturnStatement, ExpressionStatement, FunctionCall, BinaryOperation, UnaryOperation, Literal, Variable, AlternativelyPart
+        
+        result = ""
+        prefix = "  " * indent
+        
+        if isinstance(node, Program):
+            result += f"{prefix}Program\n"
+            for func in node.functions:
+                result += self._get_ast_structure(func, indent + 1)
+        
+        elif isinstance(node, Function):
+            params = ", ".join(f'{p.type} {p.name}' for p in node.parameters)
+            result += f"{prefix}Function: {node.name}({params}) -> {node.return_type}\n"
+            for stmt in node.body:
+                result += self._get_ast_structure(stmt, indent + 1)
+        
+        elif isinstance(node, VariableDeclaration):
+            init_val = f" = {node.value.value if hasattr(node.value, 'value') else 'expr'}" if node.value else ""
+            result += f"{prefix}VariableDeclaration: {node.type} {node.name}{init_val}\n"
+            if node.value:
+                result += self._get_ast_structure(node.value, indent + 1)
+        
+        elif isinstance(node, Assignment):
+            result += f"{prefix}Assignment: {node.name} = \n"
+            result += self._get_ast_structure(node.value, indent + 1)
+        
+        elif isinstance(node, ObserveStatement):
+            result += f"{prefix}ObserveStatement\n"
+            result += f"{prefix}  Condition:\n"
+            result += self._get_ast_structure(node.condition, indent + 2)
+            result += f"{prefix}  Then:\n"
+            for stmt in node.then_body:
+                result += self._get_ast_structure(stmt, indent + 2)
+            
+            if hasattr(node, 'alternatively_parts') and node.alternatively_parts:
+                for alt in node.alternatively_parts:
+                    result += f"{prefix}  Alternatively:\n"
+                    result += self._get_ast_structure(alt.condition, indent + 2)
+                    for stmt in alt.body:
+                        result += self._get_ast_structure(stmt, indent + 2)
+            
+            if hasattr(node, 'inevitably_body') and node.inevitably_body:
+                result += f"{prefix}  Inevitably:\n"
+                for stmt in node.inevitably_body:
+                    result += self._get_ast_structure(stmt, indent + 2)
+        
+        elif isinstance(node, ForStatement):
+            result += f"{prefix}ForStatement\n"
+            if node.init:
+                result += f"{prefix}  Init:\n"
+                result += self._get_ast_structure(node.init, indent + 2)
+            if node.condition:
+                result += f"{prefix}  Condition:\n"
+                result += self._get_ast_structure(node.condition, indent + 2)
+            if node.update:
+                result += f"{prefix}  Update:\n"
+                result += self._get_ast_structure(node.update, indent + 2)
+            result += f"{prefix}  Body:\n"
+            for stmt in node.body:
+                result += self._get_ast_structure(stmt, indent + 2)
+        
+        elif isinstance(node, WhileStatement):
+            result += f"{prefix}WhileStatement\n"
+            result += f"{prefix}  Condition:\n"
+            result += self._get_ast_structure(node.condition, indent + 2)
+            result += f"{prefix}  Body:\n"
+            for stmt in node.body:
+                result += self._get_ast_structure(stmt, indent + 2)
+        
+        elif isinstance(node, ReturnStatement):
+            result += f"{prefix}ReturnStatement\n"
+            if node.value:
+                result += self._get_ast_structure(node.value, indent + 1)
+        
+        elif isinstance(node, ExpressionStatement):
+            result += f"{prefix}ExpressionStatement\n"
+            result += self._get_ast_structure(node.expression, indent + 1)
+        
+        elif isinstance(node, FunctionCall):
+            result += f"{prefix}FunctionCall: {node.name}()\n"
+            for arg in node.arguments:
+                result += self._get_ast_structure(arg, indent + 1)
+        
+        elif isinstance(node, BinaryOperation):
+            result += f"{prefix}BinaryOperation: {node.operator}\n"
+            result += self._get_ast_structure(node.left, indent + 1)
+            result += self._get_ast_structure(node.right, indent + 1)
+        
+        elif isinstance(node, UnaryOperation):
+            result += f"{prefix}UnaryOperation: {node.operator}\n"
+            result += self._get_ast_structure(node.operand, indent + 1)
+        
+        elif isinstance(node, Literal):
+            result += f"{prefix}Literal: {node.value} ({node.type})\n"
+        
+        elif isinstance(node, Variable):
+            result += f"{prefix}Variable: {node.name}\n"
+        
+        else:
+            result += f"{prefix}{type(node).__name__}\n"
+        
+        return result
+
+    def analyze_code(self):
+        """Analisis completo: lexico + sintactico"""
+        self.clear_outputs()
+        code = self.code_editor.get('1.0', tk.END).strip()
+        
+        if not code:
+            self.error_output.insert('1.0', "No hay codigo para analizar")
+            return
+        
+        try:
+            # Analisis lexico
+            lexer = AlchemistLexer()
+            tokens = lexer.tokenize(code)
+            
+            self.info_output.insert('1.0', "ANALISIS COMPLETO INICIADO\n")
+            self.info_output.insert(tk.END, "="*50 + "\n")
+            self.info_output.insert(tk.END, "FASE 1: ANALISIS LEXICO\n")
+            self.info_output.insert(tk.END, f"Tokens generados: {len(tokens)}\n\n")
+            
+            # Analisis sintactico
+            parser = AlchemistParser()
+            ast = parser.parse(code)
+            
+            self.info_output.insert(tk.END, "FASE 2: ANaLISIS SINTaCTICO\n")
+            self.info_output.insert(tk.END, f"Funciones encontradas: {len(ast.functions)}\n\n")
+            
+            # Detalles de funciones
+            for func in ast.functions:
+                params = ", ".join(f'{p.type} {p.name}' for p in func.parameters)
+                self.info_output.insert(tk.END, f"  {func.name}({params}) -> {func.return_type}\n")
+                self.info_output.insert(tk.END, f"  Statements: {len(func.body)}\n")
+            
+            self.info_output.insert(tk.END, "\n" + "="*50 + "\n")
+            self.info_output.insert(tk.END, "ANaLISIS COMPLETO EXITOSO")
+            
+        except Exception as e:
+            self.error_output.insert('1.0', f"Error en analisis: {str(e)}")
+        
     # ========================================
-    # AYUDA Y EJEMPLOS
+    # TEMA Y APARIENCIA
     # ========================================
+    
+    def toggle_theme(self, dark_mode):
+        """Cambiar entre modo oscuro y claro"""
+        self.dark_mode = dark_mode
+        self.setup_styles()
+        self.refresh_ui()
+        
+    def refresh_ui(self):
+        """Refrescar la interfaz con nuevos colores"""
+        # Actualizar root
+        self.root.configure(bg=self.colors['bg_primary'])
+        
+        # Actualizar editor
+        if hasattr(self, 'code_editor'):
+            self.code_editor.configure(
+                bg=self.colors['bg_primary'],
+                fg=self.colors['fg_primary'],
+                insertbackground=self.colors['fg_primary'],
+                selectbackground=self.colors['select_bg'],
+                selectforeground=self.colors['select_fg']
+            )
+        
+        # Actualizar outputs
+        outputs = [
+            ('info_output', self.info_output),
+            ('error_output', self.error_output), 
+            ('program_output', self.program_output)
+        ]
+        
+        for name, output in outputs:
+            if hasattr(self, name):
+                output.configure(
+                    bg=self.colors['bg_primary'],
+                    fg=self.colors['fg_primary']
+                )
+         
+        self.setup_notebook_style()
     
     def show_welcome_info(self):
-        """Mostrar información de bienvenida"""
-        welcome = """BIENVENIDO A ALCHEMIST IDE
+        """Mostrar informacion de bienvenida"""
+        welcome = """ALCHEMIST IDE - CiRCULO DE TRANSMUTACION
 
 Lenguaje Alchemist - Inspirado en Fullmetal Alchemist Brotherhood
 
-Función Principal: GateOfTruth()
-Tipos: Solid, Liquid, Inscription, Principle
+Funcion Principal: GateOfTruth()
+Tipos Alquimicos: Solid, Liquid, Inscription, Principle
 Valores: Accepted (true), Rejected (false)
-I/O: Transmute(), Absorb()
-Control: Observe, Alternatively, Inevitably
+Transmutacion I/O: Transmute(), Absorb()
+Observaciones(if-elseif-else): Observe, Alternatively, Inevitably
 Ciclos: AlchemicCycle, TransmuteUntil
-Funciones: Transmutation
-Retorno: EquivalentExchange
 
 "Para obtener algo, algo de igual valor debe ser perdido"
 
-Características:
-• Sintaxis inspirada en FMA
-• Interfaz transparente con imagen de fondo automática
-• Modo oscuro/claro con imágenes temáticas
-• Análisis léxico y sintáctico
-• Ejemplos incluidos
+ """
 
-Comienza tu transmutación"""
-        
+        self.info_output.delete('1.0', tk.END)
         self.info_output.insert('1.0', welcome)
-        
+
     def show_reserved_words(self):
-        """Mostrar palabras reservadas"""
-        content = """PALABRAS RESERVADAS DE ALCHEMIST
+        """Mostrar palabras sagradas"""
+        content = """PALABRAS SAGRADAS DE ALCHEMIST
 
-Definición de Funciones:
-  Transmutation    // para definir funciones
-  
-Función Principal:
-  GateOfTruth    // función principal
+Funcion Principal:
+  GateOfTruth    // funcion principal
 
-Retorno de Valores:
-  EquivalentExchange    // para retornar valores
-
-Tipos:
+Tipos Alquimicos:
   Solid, Liquid, Inscription, Principle, void
 
 Control:
   Observe, Alternatively, Inevitably
   AlchemicCycle, TransmuteUntil
+  Transmutation
 
 I/O:
   Transmute, Absorb
@@ -863,12 +690,12 @@ Valores:
   Accepted, Rejected
 
 Operadores:
-  and, or, not, break, continue
+  and, or, not, EquivalentExchange, break, continue
 
-Total: 20 palabras reservadas"""
-        
-        self.show_language_help("Palabras Reservadas", content)
-        
+Total: 20 palabras sagradas"""
+
+        self.show_language_help("Palabras Sagradas", content)
+
     def show_control_syntax(self):
         """Mostrar sintaxis de control"""
         content = """SINTAXIS DE ALCHEMIST
@@ -879,285 +706,280 @@ Variables:
   Inscription texto = "hola"
   Principle verdadero = Accepted
 
-Condicionales:
+Observaciones:
   Observe (condicion) {
-      // código
+      // codigo
   } Alternatively (otra) {
-      // código
+      // codigo
   } Inevitably {
-      // código
+      // codigo
   }
 
 Ciclos:
   AlchemicCycle (Solid i = 0; i < 10; i = i + 1) {
-      // código
-  }
-  
-  TransmuteUntil (condicion) {
-      // código
+      // codigo
   }
 
-Funciones:
-  Transmutation GateOfTruth() -> void {
-      // función principal
-      EquivalentExchange  // retornar sin valor
+  TransmuteUntil (condicion) {
+      // codigo
   }
-  
-  Transmutation miFuncion() -> Solid {
-      EquivalentExchange 42  // retornar valor
+
+Transmutaciones:
+  Transmutation GateOfTruth() -> void {
+      // funcion principal
   }
 
 I/O:
   Transmute("mensaje")
-  Inscription x = Absorb("prompt")"""
-        
+  Inscription x = Absorb(":")"""
+
         self.show_language_help("Sintaxis", content)
-        
+
     def load_example(self):
         """Cargar ejemplos"""
         examples = {
-            "Variables Básicas": '''Transmutation GateOfTruth() -> void {
+            "Variables Basicas": '''Transmutation GateOfTruth() -> void {
     Solid nivel = 50
     Inscription nombre = "Edward"
     Principle activo = Accepted
-    
+
     Transmute("Nivel: " + nivel)
     Transmute("Nombre: " + nombre)
-}''',
-            "Condicionales": '''Transmutation GateOfTruth() -> void {
-    Solid edad = 16
-    
-    Observe (edad >= 18) {
-        Transmute("Mayor de edad")
-    } Alternatively (edad >= 15) {
-        Transmute("Acceso limitado")
+    Observe (activo == Accepted) {
+        Transmute("Estado: ACTIVO")
     } Inevitably {
-        Transmute("Menor de edad")
+        Transmute("Estado: INACTIVO")
     }
 }''',
-            "Ciclos": '''Transmutation GateOfTruth() -> void {
-    Transmute("Activando círculos")
-    
+            "Observaciones": '''Transmutation GateOfTruth() -> void {
+    Solid edad = 16
+
+    Observe (edad >= 18) {
+        Transmute("Mayor de edad - Acceso completo")
+    } Alternatively (edad >= 15) {
+        Transmute("Acceso limitado - Supervision requerida")
+    } Inevitably {
+        Transmute("Menor de edad - Acceso denegado")
+    }
+}''',
+            "Ciclo Alquimico": '''Transmutation GateOfTruth() -> void {
+    Transmute("=== ACTIVANDO CiRCULOS ===")
+
     AlchemicCycle (Solid i = 1; i <= 5; i = i + 1) {
-        Transmute("Círculo " + i + " activado")
+        Transmute("Circulo " + i + " ACTIVADO")
+        Transmute("   Energia: " + (i * 20) + "%")
     }
+
+    Transmute("Transmutacion completada")
 }''',
-            "Funciones": '''Transmutation GateOfTruth() -> void {
+            "Transmutaciones": '''Transmutation GateOfTruth() -> void {
     Solid poder = calcularPoder(16)
-    Transmute("Poder: " + poder)
+    Transmute("Poder alquimico: " + poder)
 }
 
 Transmutation calcularPoder(Solid edad) -> Solid {
     EquivalentExchange edad * 25 + 100
 }''',
-            "Bucle While": '''Transmutation GateOfTruth() -> void {
+            "TransmuteUntil": '''Transmutation GateOfTruth() -> void {
     Solid energia = 100
     Solid ronda = 1
-    
+
+    Transmute("=== ENTRENAMIENTO INICIADO ===")
+
     TransmuteUntil (energia <= 20) {
-        Transmute("Ronda " + ronda + " - Energía: " + energia)
+        Transmute("Ronda " + ronda + " - Energia: " + energia + "%")
         energia = energia - 15
         ronda = ronda + 1
     }
+
+    Transmute("Entrenamiento completado")
 }''',
-            "Entrada de Datos": '''Transmutation GateOfTruth() -> void {
-    Transmute("Registro de alquimista")
-    
+            "Absorcion de Datos": '''Transmutation GateOfTruth() -> void {
+    Transmute("=== REGISTRO ALQUiMICO ===")
+
     Inscription nombre = Absorb("Tu nombre: ")
-    
-    Transmute("Hola " + nombre)
+
+    Transmute("")
+    Transmute("Perfil registrado:")
+    Transmute("Nombre: " + nombre)
+
+    Observe (nombre == "Edward") {
+        Transmute("ALQUIMISTA SENIOR")
+    } Inevitably {
+        Transmute("APRENDIZ")
+    }
 }'''
         }
-        
+
         self.show_example_window(examples)
-        
+
     def show_example_window(self, examples):
-        """Mostrar ventana de ejemplos"""
+        """Mostrar ventana de ejemplos con estilo minimalista"""
         window = tk.Toplevel(self.root)
-        window.title("Ejemplos de Código")
+        window.title("Grimorio de Ejemplos")
         window.geometry("700x600")
         window.configure(bg=self.colors['bg_primary'])
         window.grab_set()
-        
-        # Título
-        title_frame = tk.Frame(
-            window, 
-            bg=self.colors['button_bg'], 
-            relief=tk.RAISED, 
-            bd=3
-        )
-        title_frame.pack(fill=tk.X, padx=10, pady=10)
-        
+
+        # Titulo
         title_label = tk.Label(
-            title_frame,
-            text="EJEMPLOS DE CÓDIGO ALCHEMIST",
-            font=('Arial', 14, 'bold'),
-            bg=self.colors['button_bg'],
-            fg=self.colors['button_fg'],
-            pady=8
+            window,
+            text="GRIMORIO DE TRANSMUTACIONES",
+            font=self.fonts['title'],
+            bg=self.colors['bg_primary'],
+            fg=self.colors['fg_primary'],
+            pady=10
         )
         title_label.pack()
-        
+
         # Lista
-        list_frame = tk.Frame(
-            window, 
-            bg=self.colors['bg_transparent'], 
-            relief=tk.RIDGE, 
-            bd=2
-        )
+        list_frame = tk.Frame(window, bg=self.colors['bg_primary'])
         list_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=10)
-        
+
         listbox = tk.Listbox(
             list_frame,
-            font=('Consolas', 10, 'bold'),
-            bg=self.colors['bg_transparent'],
+            font=self.fonts['main'],
+            bg=self.colors['bg_primary'],
             fg=self.colors['fg_primary'],
             selectbackground=self.colors['select_bg'],
             selectforeground=self.colors['select_fg'],
-            relief=tk.FLAT,
-            bd=0
+            relief=tk.SOLID,
+            bd=1
         )
-        listbox.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
-        
+        listbox.pack(fill=tk.BOTH, expand=True)
+
         for title in examples.keys():
             listbox.insert(tk.END, title)
         listbox.selection_set(0)
-            
+
         # Botones
         button_frame = tk.Frame(window, bg=self.colors['bg_primary'])
         button_frame.pack(fill=tk.X, padx=15, pady=15)
-        
+
         def load_selected():
             selection = listbox.curselection()
             if selection:
                 title = listbox.get(selection[0])
                 code = examples[title]
-                
+
                 if messagebox.askyesno(
-                    "Cargar Ejemplo", 
-                    f"¿Cargar el ejemplo '{title}'?\n\nEsto reemplazará el código actual.",
+                    "Activar Transmutacion",
+                    f"¿Activar circulo de transmutacion?\\n\\n{title}\\n\\nEsto reemplazara el codigo actual.",
                     parent=window
                 ):
                     self.code_editor.delete('1.0', tk.END)
                     self.code_editor.insert('1.0', code)
                     self.clear_outputs()
                     window.destroy()
-                
+
         tk.Button(
             button_frame,
-            text="CARGAR EJEMPLO",
+            text="ACTIVAR",
             command=load_selected,
-            font=('Arial', 11, 'bold'),
+            font=self.fonts['button'],
             bg=self.colors['button_bg'],
             fg=self.colors['button_fg'],
             activebackground=self.colors['button_active'],
             activeforeground=self.colors['fg_primary'],
-            relief=tk.RAISED,
-            bd=3,
+            relief=tk.SOLID,
+            bd=1,
             padx=20,
-            pady=6
+            pady=5
         ).pack(side=tk.LEFT, padx=(0, 15))
-        
+
         tk.Button(
             button_frame,
             text="CERRAR",
             command=window.destroy,
-            font=('Arial', 10),
+            font=self.fonts['button'],
             bg=self.colors['button_bg'],
             fg=self.colors['button_fg'],
             activebackground=self.colors['button_active'],
             activeforeground=self.colors['fg_primary'],
-            relief=tk.RAISED,
-            bd=3,
+            relief=tk.SOLID,
+            bd=1,
             padx=15,
-            pady=6
+            pady=5
         ).pack(side=tk.RIGHT)
-        
+
     def show_language_help(self, title, content):
-        """Mostrar ayuda"""
+        """Mostrar ayuda con estilo minimalista"""
         window = tk.Toplevel(self.root)
         window.title(title)
         window.geometry("600x500")
         window.configure(bg=self.colors['bg_primary'])
-        
-        # Título
-        title_frame = tk.Frame(
-            window, 
-            bg=self.colors['button_bg'], 
-            relief=tk.RAISED, 
-            bd=3
-        )
-        title_frame.pack(fill=tk.X, padx=8, pady=8)
-        
+
+        # Titulo
         title_label = tk.Label(
-            title_frame,
+            window,
             text=title,
-            font=('Arial', 12, 'bold'),
-            bg=self.colors['button_bg'],
-            fg=self.colors['button_fg'],
-            pady=6
+            font=self.fonts['title'],
+            bg=self.colors['bg_primary'],
+            fg=self.colors['fg_primary'],
+            pady=10
         )
         title_label.pack()
-        
+
         # Contenido
         text = scrolledtext.ScrolledText(
-            window, 
-            bg=self.colors['bg_transparent'], 
+            window,
+            bg=self.colors['bg_primary'],
             fg=self.colors['fg_primary'],
-            font=('Consolas', 10),
-            relief=tk.FLAT,
-            bd=0
+            font=self.fonts['main'],
+            relief=tk.SOLID,
+            bd=1
         )
         text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         text.insert('1.0', content)
         text.config(state=tk.DISABLED)
-        
+
     def show_about(self):
         """Mostrar acerca de"""
-        about = """ALCHEMIST IDE
-
-Versión: 4.0 Transparent Edition
-Estilo: Transparente con imagen de fondo automática
+        about = """ALCHEMIST IDE - CiRCULO DE TRANSMUTACION SUPREMO
+  
 Inspirado en: Fullmetal Alchemist Brotherhood
-Tema: Intercambio Equivalente
+Tema: Intercambio Equivalente y Filosofia Alquimica
 
-Características:
-• Sintaxis épica inspirada en FMA
-• Interfaz transparente
-• Imagen de fondo automática según tema
-• Modos oscuro/claro con imágenes específicas
-• Análisis léxico y sintáctico completo
-• 20 palabras reservadas alquímicas
-• Función principal GateOfTruth()
-• Sistema I/O con Absorb() universal
+Caracteristicas:
+• Sintaxis completamente inspirada en FMA 
+• Analisis lexico y sintactico avanzado
+• 20 palabras sagradas alquimicas 
+• Funcion principal GateOfTruth()
 
-Filosofía:
+Filosofia del Lenguaje:
 "Para obtener algo, algo de igual valor debe ser perdido"
 "El conocimiento sin poder es inútil"
 "El poder sin conocimiento es peligroso"
+ 
+Domina el poder del Intercambio Equivalente!"""
 
-Desarrollado para verdaderos alquimistas"""
-        
-        messagebox.showinfo("Acerca de Alchemist IDE", about)
-        
+        messagebox.showinfo("Acerca del Arte Sagrado", about)
+
     def clear_outputs(self):
         """Limpiar salidas"""
+        self.info_output.delete('1.0', tk.END)
         self.error_output.delete('1.0', tk.END)
         self.program_output.delete('1.0', tk.END)
-        
+
     def run(self):
         """Ejecutar IDE"""
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.root.mainloop()
-        
+
     def on_closing(self):
         """Manejar cierre"""
-        if messagebox.askokcancel("Cerrar", "¿Cerrar Alchemist IDE?"):
+        if self.code_modified:
+            if messagebox.askyesno("Archivo sin guardar", 
+                                 "¿Guardar cambios antes de cerrar?"):
+                self.save_file()
+        
+        if messagebox.askokcancel("Cerrar Portal", 
+                                "¿Cerrar el Circulo de Transmutacion?"):
             self.root.destroy()
 
 def main():
-    """Función principal"""
-    print("Iniciando Alchemist IDE...")
+    """Funcion principal"""
+    print("Iniciando Alchemist IDE Minimalista...")
     ide = AlchemistIDE()
     ide.run()
 

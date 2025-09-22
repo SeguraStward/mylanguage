@@ -8,7 +8,7 @@ from src.ide import AlchemistIDE
 
 
 def main():
-    """Función principal"""
+    """Funcion principal"""
     try:
         ide = AlchemistIDE()
         ide.run()

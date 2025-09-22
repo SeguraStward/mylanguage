@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Alchemist Parser - Analizador Sintáctico
-Analiza la estructura sintáctica del código y genera un AST (Abstract Syntax Tree)
+Alchemist Parser - Analizador Sintactico
+Analiza la estructura sintactica del codigo y genera un AST (Abstract Syntax Tree)
 """
 
 from typing import List, Optional, Any
@@ -12,7 +12,11 @@ from typing import List, Optional, Any
 from dataclasses import dataclass
 from abc import ABC
 
-from .lexer import AlchemistLexer, Token, TokenType
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from src.lexer import AlchemistLexer, Token, TokenType
 
 
 # ========================================
@@ -26,13 +30,13 @@ class ASTNode(ABC):
 
 @dataclass
 class Program(ASTNode):
-    """Nodo raíz del programa - contiene todas las funciones"""
+    """Nodo raiz del programa - contiene todas las funciones"""
     functions: List['Function']
 
 
 @dataclass
 class Function(ASTNode):
-    """Definición de función"""
+    """Definicion de funcion"""
     name: str
     parameters: List['Parameter']
     return_type: str
@@ -42,7 +46,7 @@ class Function(ASTNode):
 
 @dataclass
 class Parameter(ASTNode):
-    """Parámetro de función"""
+    """Parametro de funcion"""
     name: str
     type: str
 
@@ -55,7 +59,7 @@ class Statement(ASTNode):
 
 @dataclass
 class ObserveStatement(Statement):
-    """Declaración Observe/Alternatively/Inevitably"""
+    """Declaracion Observe/Alternatively/Inevitably"""
     condition: 'Expression'
     then_body: List['Statement']
     alternatively_parts: List['AlternativelyPart']
@@ -68,9 +72,6 @@ class AlternativelyPart(ASTNode):
     """Parte Alternatively de un Observe statement"""
     condition: 'Expression'
     body: List['Statement']
-class Statement(ASTNode):
-    """Clase base para todas las declaraciones"""
-    pass
 
 
 @dataclass
@@ -85,7 +86,7 @@ class Expression(ASTNode):
 
 @dataclass
 class VariableDeclaration(Statement):
-    """Declaración de variable: int x = 5"""
+    """Declaracion de variable: int x = 5"""
     name: str
     type: str
     value: Optional[Expression]
@@ -94,27 +95,10 @@ class VariableDeclaration(Statement):
 
 @dataclass
 class Assignment(Statement):
-    """Asignación: x = 10"""
+    """Asignacion: x = 10"""
     name: str
     value: Expression
     line: int
-
-
-@dataclass
-class IfStatement(Statement):
-    """Declaración if/elif/else"""
-    condition: Expression
-    then_body: List[Statement]
-    elif_parts: List['ElifPart']
-    else_body: Optional[List[Statement]]
-    line: int
-
-
-@dataclass
-class ElifPart(ASTNode):
-    """Parte elif de un if statement"""
-    condition: Expression
-    body: List[Statement]
 
 
 @dataclass
@@ -137,26 +121,26 @@ class ForStatement(Statement):
 
 @dataclass
 class ReturnStatement(Statement):
-    """Declaración return"""
+    """Declaracion return"""
     value: Optional[Expression]
     line: int
 
 
 @dataclass
 class BreakStatement(Statement):
-    """Declaración break"""
+    """Declaracion break"""
     line: int
 
 
 @dataclass
 class ContinueStatement(Statement):
-    """Declaración continue"""
+    """Declaracion continue"""
     line: int
 
 
 @dataclass
 class ExpressionStatement(Statement):
-    """Expresión usada como declaración"""
+    """Expresion usada como declaracion"""
     expression: Expression
     line: int
 
@@ -167,7 +151,7 @@ class ExpressionStatement(Statement):
 
 @dataclass
 class BinaryOperation(Expression):
-    """Operación binaria: a + b, a == b, etc."""
+    """Operacion binaria: a + b, a == b, etc."""
     left: Expression
     operator: str
     right: Expression
@@ -175,14 +159,14 @@ class BinaryOperation(Expression):
 
 @dataclass
 class UnaryOperation(Expression):
-    """Operación unaria: -x, not x"""
+    """Operacion unaria: -x, not x"""
     operator: str
     operand: Expression
 
 
 @dataclass
 class FunctionCall(Expression):
-    """Llamada a función: func(arg1, arg2)"""
+    """Llamada a funcion: func(arg1, arg2)"""
     name: str
     arguments: List[Expression]
     line: int
@@ -203,24 +187,24 @@ class Literal(Expression):
 
 
 # ========================================
-# EXCEPCIONES DE ANÁLISIS SINTÁCTICO
+# EXCEPCIONES DE ANALISIS SINTACTICO
 # ========================================
 
 class ParseError(Exception):
-    """Excepción para errores de análisis sintáctico"""
+    """Excepcion para errores de analisis sintactico"""
     def __init__(self, message: str, line: int, column: int):
         self.message = message
         self.line = line
         self.column = column
-        super().__init__(f"Error sintáctico en línea {line}, columna {column}: {message}")
+        super().__init__(f"Error sintactico en linea {line}, columna {column}: {message}")
 
 
 # ========================================
-# ANALIZADOR SINTÁCTICO (PARSER)
+# ANALIZADOR SINTaCTICO (PARSER)
 # ========================================
 
 class AlchemistParser:
-    """Analizador sintáctico para Alchemist"""
+    """Analizador sintactico para Alchemist"""
     
     def __init__(self):
         """Inicializa el parser"""
@@ -229,16 +213,16 @@ class AlchemistParser:
         
     def parse(self, source_code: str) -> Program:
         """
-        Analiza el código fuente y genera el AST
+        Analiza el codigo fuente y genera el AST
         
         Args:
-            source_code: Código fuente a analizar
+            source_code: Codigo fuente a analizar
             
         Returns:
             AST del programa
             
         Raises:
-            ParseError: Si encuentra errores sintácticos
+            ParseError: Si encuentra errores sintacticos
         """
         # Generar tokens
         lexer = AlchemistLexer()
@@ -258,10 +242,10 @@ class AlchemistParser:
             function = self._parse_function()
             functions.append(function)
         
-        # Verificar que existe función GateOfTruth (función principal)
+        # Verificar que existe funcion GateOfTruth (funcion principal)
         gateoftruth_found = any(func.name == 'GateOfTruth' for func in functions)
         if not gateoftruth_found:
-            raise ParseError("Se requiere una función principal 'GateOfTruth'", 1, 1)
+            raise ParseError("Se requiere una funcion principal 'GateOfTruth'", 1, 1)
         
         return Program(functions)
     
@@ -314,56 +298,56 @@ class AlchemistParser:
     # ========================================
     
     def _parse_function(self) -> Function:
-        """Analiza una definición de función"""
+        """Analiza una definicion de funcion"""
         line = self._peek().line
         
         self._consume(TokenType.TRANSMUTATION, "Se esperaba 'Transmutation'")
         
-        # Solo aceptar IDENTIFIER para el nombre de función
+        # Solo aceptar IDENTIFIER para el nombre de funcion
         if self._check(TokenType.IDENTIFIER):
             name_token = self._advance()
         else:
             current_token = self._peek()
-            raise ParseError("Se esperaba nombre de función", current_token.line, current_token.column)
+            raise ParseError("Se esperaba nombre de funcion", current_token.line, current_token.column)
         
         name = name_token.value
         
-        self._consume(TokenType.LPAREN, "Se esperaba '(' después del nombre de función")
+        self._consume(TokenType.LPAREN, "Se esperaba '(' despues del nombre de funcion")
         
-        # Parámetros
+        # Parametros
         parameters = []
         if not self._check(TokenType.RPAREN):
             parameters.append(self._parse_parameter())
             while self._match(TokenType.COMMA):
                 parameters.append(self._parse_parameter())
         
-        self._consume(TokenType.RPAREN, "Se esperaba ')' después de los parámetros")
+        self._consume(TokenType.RPAREN, "Se esperaba ')' despues de los parametros")
         
         # Tipo de retorno
-        self._consume(TokenType.ARROW, "Se esperaba '->' después de los parámetros")
+        self._consume(TokenType.ARROW, "Se esperaba '->' despues de los parametros")
         return_type_token = self._advance()
         
         if return_type_token.type not in [TokenType.SOLID_TYPE, TokenType.LIQUID_TYPE, 
                                         TokenType.INSCRIPTION_TYPE, TokenType.PRINCIPLE_TYPE, TokenType.VOID]:
-            raise ParseError("Tipo de retorno inválido", return_type_token.line, return_type_token.column)
+            raise ParseError("Tipo de retorno invalido", return_type_token.line, return_type_token.column)
         
         return_type = return_type_token.value
         
-        # Cuerpo de la función
-        self._consume(TokenType.LBRACE, "Se esperaba '{' al inicio del cuerpo de función")
+        # Cuerpo de la funcion
+        self._consume(TokenType.LBRACE, "Se esperaba '{' al inicio del cuerpo de funcion")
         body = self._parse_block()
-        self._consume(TokenType.RBRACE, "Se esperaba '}' al final del cuerpo de función")
+        self._consume(TokenType.RBRACE, "Se esperaba '}' al final del cuerpo de funcion")
         
         return Function(name, parameters, return_type, body, line)
     
     def _parse_parameter(self) -> Parameter:
-        """Analiza un parámetro de función"""
+        """Analiza un parametro de funcion"""
         type_token = self._advance()
         if type_token.type not in [TokenType.SOLID_TYPE, TokenType.LIQUID_TYPE, 
                                  TokenType.INSCRIPTION_TYPE, TokenType.PRINCIPLE_TYPE]:
-            raise ParseError("Tipo de parámetro inválido", type_token.line, type_token.column)
+            raise ParseError("Tipo de parametro invalido", type_token.line, type_token.column)
         
-        name_token = self._consume(TokenType.IDENTIFIER, "Se esperaba nombre del parámetro")
+        name_token = self._consume(TokenType.IDENTIFIER, "Se esperaba nombre del parametro")
         
         return Parameter(name_token.value, type_token.value)
     
@@ -378,7 +362,7 @@ class AlchemistParser:
         return statements
     
     def _parse_statement(self) -> Statement:
-        """Analiza una declaración"""
+        """Analiza una declaracion"""
         if self._match(TokenType.OBSERVE):
             return self._parse_observe_statement()
         
@@ -388,7 +372,7 @@ class AlchemistParser:
         if self._match(TokenType.ALCHEMICCYCLE):
             return self._parse_alchemiccycle_statement()
         
-        if self._match(TokenType.EQUIVALENTEXCHANGE):
+        if self._match(TokenType.EQUIVALENTEXCHANGE, TokenType.RETURN):
             return self._parse_return_statement()
         
         if self._match(TokenType.BREAK):
@@ -397,30 +381,30 @@ class AlchemistParser:
         if self._match(TokenType.CONTINUE):
             return ContinueStatement(self._previous().line)
         
-        # Verificar declaración de variable o asignación
+        # Verificar declaracion de variable o asignacion
         if self._check_variable_declaration():
             return self._parse_variable_declaration()
         
         if self._check_assignment():
             return self._parse_assignment()
         
-        # Expresión como declaración
+        # Expresion como declaracion
         return self._parse_expression_statement()
     
     def _check_variable_declaration(self) -> bool:
-        """Verifica si la siguiente declaración es una declaración de variable"""
+        """Verifica si la siguiente declaracion es una declaracion de variable"""
         return self._check(TokenType.SOLID_TYPE) or self._check(TokenType.LIQUID_TYPE) or \
                self._check(TokenType.INSCRIPTION_TYPE) or self._check(TokenType.PRINCIPLE_TYPE)
     
     def _check_assignment(self) -> bool:
-        """Verifica si la siguiente declaración es una asignación"""
+        """Verifica si la siguiente declaracion es una asignacion"""
         if self.current + 1 < len(self.tokens):
             return (self._check(TokenType.IDENTIFIER) and 
                    self.tokens[self.current + 1].type == TokenType.ASSIGN)
         return False
     
     def _parse_variable_declaration(self) -> VariableDeclaration:
-        """Analiza una declaración de variable"""
+        """Analiza una declaracion de variable"""
         line = self._peek().line
         
         type_token = self._advance()
@@ -436,7 +420,7 @@ class AlchemistParser:
         return VariableDeclaration(name, type_name, value, line)
     
     def _parse_assignment(self) -> Assignment:
-        """Analiza una asignación"""
+        """Analiza una asignacion"""
         line = self._peek().line
         
         name_token = self._consume(TokenType.IDENTIFIER, "Se esperaba nombre de variable")
@@ -448,75 +432,75 @@ class AlchemistParser:
         return Assignment(name, value, line)
     
     def _parse_observe_statement(self) -> ObserveStatement:
-        """Analiza una declaración Observe"""
+        """Analiza una declaracion Observe"""
         line = self._previous().line
         
-        self._consume(TokenType.LPAREN, "Se esperaba '(' después de 'Observe'")
+        self._consume(TokenType.LPAREN, "Se esperaba '(' despues de 'Observe'")
         condition = self._parse_expression()
-        self._consume(TokenType.RPAREN, "Se esperaba ')' después de la condición")
+        self._consume(TokenType.RPAREN, "Se esperaba ')' despues de la condicion")
         
-        self._consume(TokenType.LBRACE, "Se esperaba '{' después de la condición")
+        self._consume(TokenType.LBRACE, "Se esperaba '{' despues de la condicion")
         then_body = self._parse_block()
-        self._consume(TokenType.RBRACE, "Se esperaba '}' después del bloque Observe")
+        self._consume(TokenType.RBRACE, "Se esperaba '}' despues del bloque Observe")
         
         # Manejo de Alternatively
         alternatively_parts = []
         while self._match(TokenType.ALTERNATIVELY):
-            self._consume(TokenType.LPAREN, "Se esperaba '(' después de 'Alternatively'")
+            self._consume(TokenType.LPAREN, "Se esperaba '(' despues de 'Alternatively'")
             alternatively_condition = self._parse_expression()
-            self._consume(TokenType.RPAREN, "Se esperaba ')' después de la condición Alternatively")
+            self._consume(TokenType.RPAREN, "Se esperaba ')' despues de la condicion Alternatively")
             
-            self._consume(TokenType.LBRACE, "Se esperaba '{' después de la condición Alternatively")
+            self._consume(TokenType.LBRACE, "Se esperaba '{' despues de la condicion Alternatively")
             alternatively_body = self._parse_block()
-            self._consume(TokenType.RBRACE, "Se esperaba '}' después del bloque Alternatively")
+            self._consume(TokenType.RBRACE, "Se esperaba '}' despues del bloque Alternatively")
             
             alternatively_parts.append(AlternativelyPart(alternatively_condition, alternatively_body))
         
         # Manejo de Inevitably
         inevitably_body = None
         if self._match(TokenType.INEVITABLY):
-            self._consume(TokenType.LBRACE, "Se esperaba '{' después de 'Inevitably'")
+            self._consume(TokenType.LBRACE, "Se esperaba '{' despues de 'Inevitably'")
             inevitably_body = self._parse_block()
-            self._consume(TokenType.RBRACE, "Se esperaba '}' después del bloque Inevitably")
+            self._consume(TokenType.RBRACE, "Se esperaba '}' despues del bloque Inevitably")
         
         return ObserveStatement(condition, then_body, alternatively_parts, inevitably_body, line)
     
     def _parse_transmuteuntil_statement(self) -> WhileStatement:
-        """Analiza una declaración TransmuteUntil"""
+        """Analiza una declaracion TransmuteUntil"""
         line = self._previous().line
         
-        self._consume(TokenType.LPAREN, "Se esperaba '(' después de 'TransmuteUntil'")
+        self._consume(TokenType.LPAREN, "Se esperaba '(' despues de 'TransmuteUntil'")
         condition = self._parse_expression()
-        self._consume(TokenType.RPAREN, "Se esperaba ')' después de la condición")
+        self._consume(TokenType.RPAREN, "Se esperaba ')' despues de la condicion")
         
-        self._consume(TokenType.LBRACE, "Se esperaba '{' después de la condición")
+        self._consume(TokenType.LBRACE, "Se esperaba '{' despues de la condicion")
         body = self._parse_block()
-        self._consume(TokenType.RBRACE, "Se esperaba '}' después del bloque TransmuteUntil")
+        self._consume(TokenType.RBRACE, "Se esperaba '}' despues del bloque TransmuteUntil")
         
         return WhileStatement(condition, body, line)
     
     def _parse_alchemiccycle_statement(self) -> ForStatement:
-        """Analiza una declaración AlchemicCycle"""
+        """Analiza una declaracion AlchemicCycle"""
         line = self._previous().line
         
-        self._consume(TokenType.LPAREN, "Se esperaba '(' después de 'AlchemicCycle'")
+        self._consume(TokenType.LPAREN, "Se esperaba '(' despues de 'AlchemicCycle'")
         
-        # Inicialización
+        # Inicializacion
         init = None
         if not self._check(TokenType.SEMICOLON):
             if self._check_variable_declaration():
                 init = self._parse_variable_declaration()
             else:
                 init = self._parse_expression_statement()
-        self._consume(TokenType.SEMICOLON, "Se esperaba ';' después de la inicialización")
+        self._consume(TokenType.SEMICOLON, "Se esperaba ';' despues de la inicializacion")
         
-        # Condición
+        # Condicion
         condition = None
         if not self._check(TokenType.SEMICOLON):
             condition = self._parse_expression()
-        self._consume(TokenType.SEMICOLON, "Se esperaba ';' después de la condición")
+        self._consume(TokenType.SEMICOLON, "Se esperaba ';' despues de la condicion")
         
-        # Actualización
+        # Actualizacion
         update = None
         if not self._check(TokenType.RPAREN):
             if self._check_assignment():
@@ -524,16 +508,16 @@ class AlchemistParser:
             else:
                 update = self._parse_expression_statement()
         
-        self._consume(TokenType.RPAREN, "Se esperaba ')' después del for")
+        self._consume(TokenType.RPAREN, "Se esperaba ')' despues del for")
         
-        self._consume(TokenType.LBRACE, "Se esperaba '{' después del for")
+        self._consume(TokenType.LBRACE, "Se esperaba '{' despues del for")
         body = self._parse_block()
-        self._consume(TokenType.RBRACE, "Se esperaba '}' después del bloque for")
+        self._consume(TokenType.RBRACE, "Se esperaba '}' despues del bloque for")
         
         return ForStatement(init, condition, update, body, line)
     
     def _parse_return_statement(self) -> ReturnStatement:
-        """Analiza una declaración return"""
+        """Analiza una declaracion return"""
         line = self._previous().line
         
         value = None
@@ -543,21 +527,20 @@ class AlchemistParser:
         return ReturnStatement(value, line)
     
     def _parse_expression_statement(self) -> ExpressionStatement:
-        """Analiza una expresión como declaración"""
+        """Analiza una expresion como declaracion"""
         line = self._peek().line
         expr = self._parse_expression()
         return ExpressionStatement(expr, line)
     
     
-    # analisis de expresiones
-    # ========================================
+    # analisis de expresiones 
     
     def _parse_expression(self) -> Expression:
-        """Analiza una expresión (precedencia más baja: OR)"""
+        """Analiza una expresion (precedencia mas baja: OR)"""
         return self._parse_or()
     
     def _parse_or(self) -> Expression:
-        """Analiza expresiones OR lógicas"""
+        """Analiza expresiones OR logicas"""
         expr = self._parse_and()
         
         while self._match(TokenType.OR):
@@ -568,7 +551,7 @@ class AlchemistParser:
         return expr
     
     def _parse_and(self) -> Expression:
-        """Analiza expresiones AND lógicas"""
+        """Analiza expresiones AND logicas"""
         expr = self._parse_equality()
         
         while self._match(TokenType.AND):
@@ -590,7 +573,7 @@ class AlchemistParser:
         return expr
     
     def _parse_comparison(self) -> Expression:
-        """Analiza expresiones de comparación"""
+        """Analiza expresiones de comparacion"""
         expr = self._parse_term()
         
         while self._match(TokenType.GREATER_THAN, TokenType.GREATER_EQUAL,
@@ -613,7 +596,7 @@ class AlchemistParser:
         return expr
     
     def _parse_factor(self) -> Expression:
-        """Analiza expresiones de multiplicación y división"""
+        """Analiza expresiones de multiplicacion y division"""
         expr = self._parse_unary()
         
         while self._match(TokenType.MULTIPLY, TokenType.DIVIDE, TokenType.MODULO):
@@ -633,11 +616,11 @@ class AlchemistParser:
         return self._parse_call()
     
     def _parse_call(self) -> Expression:
-        """Analiza llamadas a función"""
+        """Analiza llamadas a funcion"""
         expr = self._parse_primary()
         
         if self._match(TokenType.LPAREN):
-            # Es una llamada a función
+            # Es una llamada a funcion
             if isinstance(expr, Variable):
                 arguments = []
                 if not self._check(TokenType.RPAREN):
@@ -645,7 +628,7 @@ class AlchemistParser:
                     while self._match(TokenType.COMMA):
                         arguments.append(self._parse_expression())
                 
-                self._consume(TokenType.RPAREN, "Se esperaba ')' después de los argumentos")
+                self._consume(TokenType.RPAREN, "Se esperaba ')' despues de los argumentos")
                 return FunctionCall(expr.name, arguments, expr.line)
             else:
                 raise ParseError("Solo se pueden llamar funciones", self._previous().line, self._previous().column)
@@ -662,82 +645,226 @@ class AlchemistParser:
         
         if self._match(TokenType.INTEGER):
             value = int(self._previous().value)
-            return Literal(value, "int")
+            return Literal(value, "Solid")
         
         if self._match(TokenType.FLOAT):
             value = float(self._previous().value)
-            return Literal(value, "float")
+            return Literal(value, "Liquid")
         
         if self._match(TokenType.STRING):
             # Remover comillas
             value = self._previous().value[1:-1]
-            return Literal(value, "string")
+            return Literal(value, "Inscription")
+        
+        # Manejar Transmute como función especial
+        if self._match(TokenType.TRANSMUTE):
+            name = self._previous().value
+            line = self._previous().line
+            return Variable(name, line)
+        
+        # Manejar Absorb como función especial  
+        if self._match(TokenType.ABSORB):
+            name = self._previous().value
+            line = self._previous().line
+            return Variable(name, line)
+            
+        # Manejar AbsorbSolid como función especial
+        if self._match(TokenType.ABSORBSOLID):
+            name = self._previous().value
+            line = self._previous().line
+            return Variable(name, line)
         
         if self._match(TokenType.IDENTIFIER):
             name = self._previous().value
             line = self._previous().line
             return Variable(name, line)
         
-        if self._match(TokenType.TRANSMUTE):
-            # Transmute() es una función especial - manejo será en _parse_call
-            name = self._previous().value
-            line = self._previous().line
-            return Variable(name, line)
-        
-        if self._match(TokenType.ABSORB):
-            # Absorb() es una función especial
-            self._consume(TokenType.LPAREN, "Se esperaba '(' después de 'Absorb'")
-            self._consume(TokenType.RPAREN, "Se esperaba ')' después de 'Absorb'")
-            return FunctionCall("Absorb", [], self._previous().line)
-        
         if self._match(TokenType.LPAREN):
             expr = self._parse_expression()
-            self._consume(TokenType.RPAREN, "Se esperaba ')' después de la expresión")
+            self._consume(TokenType.RPAREN, "Se esperaba ')' despues de la expresion")
             return expr
         
         current_token = self._peek()
-        raise ParseError(f"Expresión inesperada: '{current_token.value}'", 
+        raise ParseError(f"Expresion inesperada: '{current_token.value}'", 
                         current_token.line, current_token.column)
 
 
 def main():
-    """Función de prueba del parser"""
+    """Funcion de prueba del parser con sintaxis Alchemist completa"""
     parser = AlchemistParser()
     
-    # Código de prueba
+    # Codigo de prueba con sintaxis Alchemist correcta
     test_code = '''
-    func GateOfTruth() -> void {
+    Transmutation GateOfTruth() -> void {
         Solid edad = 25
-        Inscription nombre = "Juan"
+        Inscription nombre = "Edward Elric"
+        Principle isAlchemist = Accepted
+        Liquid altura = 1.65
         
-        if (edad >= 18) {
-            Transmute("Eres mayor de edad")
-        } else {
-            Transmute("Eres menor de edad")
+        Transmute("=== CIRCULO DE TRANSMUTACION ===")
+        Transmute("Nombre: " + nombre)
+        Transmute("Edad: " + edad)
+        
+        Observe (edad >= 18) {
+            Transmute("Es mayor de edad")
+            Solid poder = calcularPoder(edad)
+            Transmute("Poder alquímico: " + poder)
+        } Alternatively (edad >= 15) {
+            Transmute("Acceso limitado")
+        } Inevitably {
+            Transmute("Menor de edad")
         }
         
-        Solid resultado = calcular(10, 20)
-        Transmute("El resultado es: " + resultado)
+        AlchemicCycle (Solid i = 1; i <= 3; i = i + 1) {
+            Transmute("Círculo " + i + " activado")
+        }
+        
+        Solid resultado = calcularPoder(edad)
+        EquivalentExchange resultado
     }
     
-    func calcular(Solid a, Solid b) -> Solid {
-        return a + b
+    Transmutation calcularPoder(Solid years) -> Solid {
+        EquivalentExchange years * 25 + 100
+    }
+    
+    Transmutation procesarDatos() -> void {
+        Inscription nombre = Absorb("Ingresa tu nombre: ")
+        Solid edad = AbsorbSolid("Ingresa tu edad: ")
+        
+        TransmuteUntil (edad < 18) {
+            Transmute("Demasiado joven")
+            edad = AbsorbSolid("Ingresa una edad válida: ")
+        }
+        
+        Transmute("Bienvenido " + nombre)
     }
     '''
     
     try:
         ast = parser.parse(test_code)
-        print("🌳 ANÁLISIS SINTÁCTICO COMPLETADO")
-        print("=" * 50)
+        print("ANALISIS SINTACTICO ALCHEMIST COMPLETADO")
+        print("=" * 60)
         print(f"Programa con {len(ast.functions)} funciones:")
+        print()
         
-        for func in ast.functions:
-            print(f"  - {func.name}({', '.join(f'{p.type} {p.name}' for p in func.parameters)}) -> {func.return_type}")
+        for i, func in enumerate(ast.functions, 1):
+            params = ", ".join(f'{p.type} {p.name}' for p in func.parameters)
+            print(f"Función {i}: {func.name}({params}) -> {func.return_type}")
+            print(f"   Línea: {func.line}")
+            print(f"   Statements: {len(func.body)}")
+            
+            # Mostrar tipos de statements
+            statement_types = {}
+            for stmt in func.body:
+                stmt_type = type(stmt).__name__
+                statement_types[stmt_type] = statement_types.get(stmt_type, 0) + 1
+            
+            print("   Tipos de declaraciones:")
+            for stmt_type, count in statement_types.items():
+                print(f"      • {stmt_type}: {count}")
+            print()
         
-        print("\n✅ AST generado correctamente!")
+        print("AST GENERADO CORRECTAMENTE CON SINTAXIS ALCHEMIST!")
+        
+        # Mostrar estructura del AST
+        print("\nESTRUCTURA DETALLADA DEL AST:")
+        print("=" * 60)
+        _print_ast_structure(ast, 0)
         
     except ParseError as e:
-        print(f"❌ {e}")
+        print(f"Error: {e}")
+
+
+def _print_ast_structure(node, indent=0):
+    """Función auxiliar para imprimir la estructura del AST"""
+    prefix = "  " * indent
+    
+    if isinstance(node, Program):
+        print(f"{prefix}Program")
+        for func in node.functions:
+            _print_ast_structure(func, indent + 1)
+    
+    elif isinstance(node, Function):
+        params = ", ".join(f'{p.type} {p.name}' for p in node.parameters)
+        print(f"{prefix}Function: {node.name}({params}) -> {node.return_type}")
+        for stmt in node.body:
+            _print_ast_structure(stmt, indent + 1)
+    
+    elif isinstance(node, VariableDeclaration):
+        print(f"{prefix}VariableDeclaration: {node.type} {node.name}")
+        if node.value:
+            _print_ast_structure(node.value, indent + 1)
+    
+    elif isinstance(node, ObserveStatement):
+        print(f"{prefix}ObserveStatement")
+        print(f"{prefix}  condition:")
+        _print_ast_structure(node.condition, indent + 2)
+        print(f"{prefix}  then_body:")
+        for stmt in node.then_body:
+            _print_ast_structure(stmt, indent + 2)
+        
+        if node.alternatively_parts:
+            for i, alt in enumerate(node.alternatively_parts):
+                print(f"{prefix}  alternatively_{i}:")
+                _print_ast_structure(alt.condition, indent + 2)
+                for stmt in alt.body:
+                    _print_ast_structure(stmt, indent + 2)
+        
+        if node.inevitably_body:
+            print(f"{prefix}  inevitably:")
+            for stmt in node.inevitably_body:
+                _print_ast_structure(stmt, indent + 2)
+    
+    elif isinstance(node, ForStatement):
+        print(f"{prefix}AlchemicCycle")
+        if node.init:
+            print(f"{prefix}  init:")
+            _print_ast_structure(node.init, indent + 2)
+        if node.condition:
+            print(f"{prefix}  condition:")
+            _print_ast_structure(node.condition, indent + 2)
+        if node.update:
+            print(f"{prefix}  update:")
+            _print_ast_structure(node.update, indent + 2)
+        print(f"{prefix}  body:")
+        for stmt in node.body:
+            _print_ast_structure(stmt, indent + 2)
+    
+    elif isinstance(node, WhileStatement):
+        print(f"{prefix}TransmuteUntil")
+        print(f"{prefix}  condition:")
+        _print_ast_structure(node.condition, indent + 2)
+        print(f"{prefix}  body:")
+        for stmt in node.body:
+            _print_ast_structure(stmt, indent + 2)
+    
+    elif isinstance(node, ReturnStatement):
+        print(f"{prefix}EquivalentExchange")
+        if node.value:
+            _print_ast_structure(node.value, indent + 1)
+    
+    elif isinstance(node, ExpressionStatement):
+        print(f"{prefix}ExpressionStatement")
+        _print_ast_structure(node.expression, indent + 1)
+    
+    elif isinstance(node, FunctionCall):
+        print(f"{prefix}FunctionCall: {node.name}(...)")
+        for arg in node.arguments:
+            _print_ast_structure(arg, indent + 1)
+    
+    elif isinstance(node, BinaryOperation):
+        print(f"{prefix}BinaryOperation: {node.operator}")
+        _print_ast_structure(node.left, indent + 1)
+        _print_ast_structure(node.right, indent + 1)
+    
+    elif isinstance(node, Variable):
+        print(f"{prefix}Variable: {node.name}")
+    
+    elif isinstance(node, Literal):
+        print(f"{prefix}Literal: {node.value} ({node.type})")
+    
+    else:
+        print(f"{prefix}{type(node).__name__}")
 
 
 if __name__ == "__main__":

@@ -28,7 +28,7 @@ class TokenType(Enum):
     PRINCIPLE_TYPE = "PRINCIPLE_TYPE"
     VOID = "VOID"
     
-    #  control de flujo (nueva sintaxis alquímica)
+    #  control de flujo (nueva sintaxis alquimica)
     OBSERVE = "OBSERVE"
     ALTERNATIVELY = "ALTERNATIVELY"
     INEVITABLY = "INEVITABLY"
@@ -42,9 +42,10 @@ class TokenType(Enum):
     
     # palabras in/out
     ABSORB = "ABSORB"
+    ABSORBSOLID = "ABSORBSOLID"
     TRANSMUTE = "TRANSMUTE"
     
-    # valores alquímicos
+    # valores alquimicos
     SOLID = "SOLID"
     LIQUID = "LIQUID"
     INSCRIPTION = "INSCRIPTION"
@@ -107,12 +108,12 @@ class Token:
 
 
 class LexerError(Exception):
-    """Excepción para errores del analizador léxico"""
+    """Excepcion para errores del analizador lexico"""
     def __init__(self, message: str, line: int, column: int):
         self.message = message
         self.line = line
         self.column = column
-        super().__init__(f"Error léxico en línea {line}, columna {column}: {message}")
+        super().__init__(f"Error lexico en linea {line}, columna {column}: {message}")
 
 
 class AlchemistLexer:
@@ -121,7 +122,7 @@ class AlchemistLexer:
     def __init__(self):
         """Inicializa el lexer con las palabras reservadas y patrones"""
         
-        # palabras reservadas del lenguaje (nueva sintaxis alquímica)
+        # palabras reservadas del lenguaje (nueva sintaxis alquimica)
         self.keywords = {
             # tipos de datos alquimicos
             'Solid': TokenType.SOLID_TYPE,
@@ -130,7 +131,7 @@ class AlchemistLexer:
             'Principle': TokenType.PRINCIPLE_TYPE,
             'void': TokenType.VOID,
             
-            # control de flujo alquímico
+            # control de flujo alquimico
             'Observe': TokenType.OBSERVE,
             'Alternatively': TokenType.ALTERNATIVELY,
             'Inevitably': TokenType.INEVITABLY,
@@ -146,12 +147,13 @@ class AlchemistLexer:
             'or': TokenType.OR,
             'not': TokenType.NOT,
             
-            # valores de principio alquímico
+            # valores de principio alquimico
             'Accepted': TokenType.ACCEPTED,
             'Rejected': TokenType.REJECTED,
             
             # funciones I/O alquimicas
             'Absorb': TokenType.ABSORB,
+            'AbsorbSolid': TokenType.ABSORBSOLID,
             'Transmute': TokenType.TRANSMUTE,
         }
         
@@ -200,7 +202,7 @@ class AlchemistLexer:
             # Identificadores (deben ir despues de las palabras reservadas)
             (r'[a-zA-Z_][a-zA-Z0-9_]*', TokenType.IDENTIFIER),
             
-            # Espacios en blanco y saltos de línea
+            # Espacios en blanco y saltos de linea
             (r'\n', TokenType.NEWLINE),
             (r'[ \t]+', TokenType.WHITESPACE),
         ]
