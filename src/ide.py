@@ -132,9 +132,7 @@ class AlchemistIDE:
                         font=self.fonts['menu'])
         menubar.add_cascade(label="Ayuda", menu=help_menu)
         help_menu.add_command(label="Palabras Sagradas", command=self.show_reserved_words)
-        help_menu.add_command(label="Sintaxis", command=self.show_control_syntax)
-        help_menu.add_command(label="Informacion", command=self.show_welcome_info)
-        help_menu.add_command(label="Acerca de", command=self.show_about)
+        help_menu.add_command(label="Sintaxis", command=self.show_control_syntax) 
         
         # Menú Apariencia
         view_menu = Menu(menubar, tearoff=0,
@@ -189,7 +187,7 @@ class AlchemistIDE:
         self.code_editor.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
         # Codigo inicial minimalista
-        initial_code = """// CiRCULO DE TRANSMUTACIoN
+        initial_code = """// CIRCULO DE TRANSMUTACION
 Transmutation GateOfTruth() -> void {
     Solid power = 100
     Inscription name = "Edward Elric"
@@ -218,7 +216,7 @@ Transmutation GateOfTruth() -> void {
         
         # Tab 1: Informacion
         info_frame = tk.Frame(self.notebook, bg=self.colors['bg_primary'])
-        self.notebook.add(info_frame, text="ℹ️ Informacion")
+        self.notebook.add(info_frame, text=" Informacion")
         
         self.info_output = scrolledtext.ScrolledText(
             info_frame,
@@ -233,7 +231,7 @@ Transmutation GateOfTruth() -> void {
         
         # Tab 2: Errores
         error_frame = tk.Frame(self.notebook, bg=self.colors['bg_primary'])
-        self.notebook.add(error_frame, text="⚠️ Errores")
+        self.notebook.add(error_frame, text=" Errores")
         
         self.error_output = scrolledtext.ScrolledText(
             error_frame,
@@ -248,7 +246,7 @@ Transmutation GateOfTruth() -> void {
         
         # Tab 3: Programa
         program_frame = tk.Frame(self.notebook, bg=self.colors['bg_primary'])
-        self.notebook.add(program_frame, text="🖥️ Programa")
+        self.notebook.add(program_frame, text=" Programa")
         
         self.program_output = scrolledtext.ScrolledText(
             program_frame,
@@ -389,7 +387,7 @@ Transmutation GateOfTruth() -> void {
             self.save_file()
             
     # ========================================
-    # ANaLISIS DE CoDIGO
+    # ANALISIS DE CODIGO
     # ========================================
     
     def lexical_analysis(self):
@@ -592,7 +590,7 @@ Transmutation GateOfTruth() -> void {
             parser = AlchemistParser()
             ast = parser.parse(code)
             
-            self.info_output.insert(tk.END, "FASE 2: ANaLISIS SINTaCTICO\n")
+            self.info_output.insert(tk.END, "FASE 2: ANALISIS SINTACTICO\n")
             self.info_output.insert(tk.END, f"Funciones encontradas: {len(ast.functions)}\n\n")
             
             # Detalles de funciones
@@ -602,7 +600,7 @@ Transmutation GateOfTruth() -> void {
                 self.info_output.insert(tk.END, f"  Statements: {len(func.body)}\n")
             
             self.info_output.insert(tk.END, "\n" + "="*50 + "\n")
-            self.info_output.insert(tk.END, "ANaLISIS COMPLETO EXITOSO")
+            self.info_output.insert(tk.END, "ANALISIS COMPLETO EXITOSO")
             
         except Exception as e:
             self.error_output.insert('1.0', f"Error en analisis: {str(e)}")
@@ -935,23 +933,8 @@ Transmutation calcularPoder(Solid edad) -> Solid {
 
     def show_about(self):
         """Mostrar acerca de"""
-        about = """ALCHEMIST IDE - CiRCULO DE TRANSMUTACION SUPREMO
-  
-Inspirado en: Fullmetal Alchemist Brotherhood
-Tema: Intercambio Equivalente y Filosofia Alquimica
-
-Caracteristicas:
-• Sintaxis completamente inspirada en FMA 
-• Analisis lexico y sintactico avanzado
-• 20 palabras sagradas alquimicas 
-• Funcion principal GateOfTruth()
-
-Filosofia del Lenguaje:
-"Para obtener algo, algo de igual valor debe ser perdido"
-"El conocimiento sin poder es inútil"
-"El poder sin conocimiento es peligroso"
- 
-Domina el poder del Intercambio Equivalente!"""
+        about = """ALCHEMIST IDE 
+ """
 
         messagebox.showinfo("Acerca del Arte Sagrado", about)
 
