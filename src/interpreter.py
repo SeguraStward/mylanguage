@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-aurum Interpreter - Intérprete y Máquina Virtual
+Alchemist Interpreter - Intérprete y Máquina Virtual
 Ejecuta el código intermedio generado por el compilador
 """
 
@@ -28,8 +28,8 @@ class RuntimeError(Exception):
         super().__init__(f"Error de ejecución en instrucción {instruction_pointer}: {message}")
 
 
-class aurumInterpreter:
-    """Intérprete para aurum"""
+class AlchemistInterpreter:
+    """Intérprete para Alchemist"""
     
     def __init__(self):
         """Inicializa el intérprete"""
@@ -203,6 +203,10 @@ class aurumInterpreter:
             self._exec_halt()
         elif instruction.op == "POP":
             self._exec_pop()
+        elif instruction.op == "STORE_ARRAY":
+            self._exec_store_array(instruction)
+        elif instruction.op == "LOAD_ARRAY":
+            self._exec_load_array(instruction)
         elif instruction.op == "LABEL":
             # Las etiquetas no hacen nada en tiempo de ejecución
             self.instruction_pointer += 1
@@ -259,6 +263,77 @@ class aurumInterpreter:
         
         value = frame.parameters[param_index]
         self.memory[address] = value
+        self.instruction_pointer += 1
+    
+    def _exec_store_array(self, instruction: Instruction) -> None:
+        """Almacena un valor en un elemento del array"""
+        # La pila contiene: [índice, valor]
+        if len(self.stack) < 2:
+            raise RuntimeError("Pila insuficiente para operación STORE_ARRAY")
+        
+        value = self.stack.pop()  # Valor a almacenar
+        index = self.stack.pop()  # Índice del array
+        base_addr = instruction.arg1  # Dirección base del array
+        array_size = instruction.arg2  # Tamaño del array
+        array_name = instruction.arg3  # Nombre del array (para mensajes de error)
+        
+        # Validar que el índice sea un entero
+        if not isinstance(index, int):
+            raise RuntimeError(f"El índice del array debe ser un entero, se obtuvo: {type(index).__name__}")
+        
+        # VALIDACION DE RANGO
+        if index < 0:
+            raise RuntimeError(f"Índice de array negativo: {index}. Los índices deben ser >= 0")
+        
+        if index >= array_size:
+            raise RuntimeError(f"Índice fuera de rango: {index}. El array '{array_name}' tiene tamaño {array_size} (índices válidos: 0-{array_size - 1})")
+        
+        # Calcular dirección efectiva
+        target_addr = base_addr + index
+        
+        # Validar dirección
+        if target_addr >= len(self.memory):
+            raise RuntimeError(f"Dirección de memoria inválida: {target_addr}")
+        
+        # Almacenar valor
+        self.memory[target_addr] = value
+        self.instruction_pointer += 1
+    
+    def _exec_load_array(self, instruction: Instruction) -> None:
+        """Carga un valor desde un elemento del array"""
+        # La pila contiene: [índice]
+        if not self.stack:
+            raise RuntimeError("Pila vacía para operación LOAD_ARRAY")
+        
+        index = self.stack.pop()  # Índice del array
+        base_addr = instruction.arg1  # Dirección base del array
+        array_size = instruction.arg2  # Tamaño del array
+        array_name = instruction.arg3  # Nombre del array (para mensajes de error)
+        
+        # Validar que el índice sea un entero
+        if not isinstance(index, int):
+            raise RuntimeError(f"El índice del array debe ser un entero, se obtuvo: {type(index).__name__}")
+        
+        # VALIDACION DE RANGO
+        if index < 0:
+            raise RuntimeError(f"Índice de array negativo: {index}. Los índices deben ser >= 0")
+        
+        if index >= array_size:
+            raise RuntimeError(f"Índice fuera de rango: {index}. El array '{array_name}' tiene tamaño {array_size} (índices válidos: 0-{array_size - 1})")
+        
+        # Calcular dirección efectiva
+        target_addr = base_addr + index
+        
+        # Validar dirección
+        if target_addr >= len(self.memory):
+            raise RuntimeError(f"Dirección de memoria inválida: {target_addr}")
+        
+        # Cargar valor
+        value = self.memory[target_addr]
+        if value is None:
+            raise RuntimeError(f"Elemento del array no inicializado en índice {index}")
+        
+        self.stack.append(value)
         self.instruction_pointer += 1
     
     # ========================================
@@ -498,8 +573,9 @@ class aurumInterpreter:
         function_name = instruction.arg1
         arg_count = instruction.arg2
         
-        # Manejar funciones built-in
-        if function_name in ["print", "write", "read"]:
+        # Manejar funciones built-in (tradicionales y alquímicas)
+        builtin_functions = ["print", "write", "read", "Transmute", "Absorb", "AbsorbSolid"]
+        if function_name in builtin_functions:
             self._call_builtin_function(function_name, arg_count)
             return
         
@@ -532,7 +608,48 @@ class aurumInterpreter:
     
     def _call_builtin_function(self, function_name: str, arg_count: int) -> None:
         """Ejecuta una función built-in del sistema"""
-        if function_name == "print":
+        # Funciones alquímicas
+        if function_name == "Transmute":
+            # Transmute imprime un valor (equivalente alquímico de print)
+            if arg_count != 1:
+                raise RuntimeError(f"Transmute() espera 1 argumento, se encontraron {arg_count}")
+            
+            if not self.stack:
+                raise RuntimeError("Argumento faltante para Transmute()")
+            
+            value = self.stack.pop()
+            self.output.append(str(value))
+            # Transmute es void, pero ponemos None en la pila para el POP
+            self.stack.append(None)
+        
+        elif function_name == "Absorb":
+            # Absorb lee entrada de texto (equivalente alquímico de read)
+            if arg_count != 0:
+                raise RuntimeError(f"Absorb() no espera argumentos, se encontraron {arg_count}")
+            
+            if self.input_buffer:
+                value = self.input_buffer.pop(0)
+                self.stack.append(value)
+            else:
+                self.stack.append("")  # Entrada vacía
+        
+        elif function_name == "AbsorbSolid":
+            # AbsorbSolid lee un entero
+            if arg_count != 0:
+                raise RuntimeError(f"AbsorbSolid() no espera argumentos, se encontraron {arg_count}")
+            
+            if self.input_buffer:
+                value = self.input_buffer.pop(0)
+                try:
+                    value = int(value)
+                except ValueError:
+                    raise RuntimeError(f"AbsorbSolid() esperaba un número entero, obtuvo: {value}")
+                self.stack.append(value)
+            else:
+                self.stack.append(0)  # Valor por defecto
+        
+        # Funciones tradicionales
+        elif function_name == "print":
             if arg_count != 1:
                 raise RuntimeError(f"print() espera 1 argumento, se encontraron {arg_count}")
             
@@ -655,10 +772,10 @@ class aurumInterpreter:
 
 def main():
     """Función de prueba del intérprete"""
-    from .lexer import AurumLexer
-    from .parser import AurumParser
-    from .semantic_analyzer import aurumSemanticAnalyzer
-    from .code_generator import aurumCodeGenerator
+    from .lexer import AlchemistLexer
+    from .parser import AlchemistParser
+    from .semantic_analyzer import AlchemistSemanticAnalyzer
+    from .code_generator import AlchemistCodeGenerator
     
     # Código de prueba
     test_code = '''
@@ -683,10 +800,10 @@ def main():
     
     try:
         # Compilación completa
-        lexer = AurumLexer()
-        parser = AurumParser()
-        analyzer = aurumSemanticAnalyzer()
-        generator = aurumCodeGenerator()
+        lexer = AlchemistLexer()
+        parser = AlchemistParser()
+        analyzer = AlchemistSemanticAnalyzer()
+        generator = AlchemistCodeGenerator()
         
         # Análisis
         ast = parser.parse(test_code)
@@ -705,7 +822,7 @@ def main():
         print("=" * 50)
         
         # Ejecución
-        interpreter = aurumInterpreter()
+        interpreter = AlchemistInterpreter()
         interpreter.load_program(instructions, generator.variables, generator.functions)
         
         output = interpreter.execute()

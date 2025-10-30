@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.lexer import AlchemistLexer
 from src.parser import AlchemistParser
+from src.compiler import AlchemistCompiler
 
 class AlchemistIDE:
     """IDE minimalista para el lenguaje Alchemist"""
@@ -27,6 +28,9 @@ class AlchemistIDE:
         self.current_file = None
         self.code_modified = False
         self.dark_mode = True  # Modo por defecto
+        self.compiled_bytecode = None
+        self.compiled_variables = None
+        self.compiled_functions = None
         
         # Configurar estilos
         self.setup_styles()
@@ -106,16 +110,17 @@ class AlchemistIDE:
         file_menu.add_separator()
         file_menu.add_command(label="Salir", command=self.on_closing, accelerator="Ctrl+Q")
         
-        # Menú Codigo (movido desde botones)
-        code_menu = Menu(menubar, tearoff=0,
+        # Menú Ejecutar
+        run_menu = Menu(menubar, tearoff=0,
                         bg=self.colors['bg_primary'], 
                         fg=self.colors['fg_primary'],
                         font=self.fonts['menu'])
-        menubar.add_cascade(label="Analisis", menu=code_menu)
-        code_menu.add_command(label="Analisis Lexico", command=self.lexical_analysis, accelerator="F6")
-        code_menu.add_command(label="Analisis Sintactico", command=self.syntactic_analysis, accelerator="F7")
-        code_menu.add_separator()
-        code_menu.add_command(label="Limpiar Salidas", command=self.clear_outputs)
+        menubar.add_cascade(label="Ejecutar", menu=run_menu)
+        run_menu.add_command(label="Compilar", command=self.compile_code, accelerator="F5")
+        run_menu.add_command(label="Ejecutar", command=self.run_code, accelerator="F6")
+        run_menu.add_command(label="Compilar y Ejecutar", command=self.compile_and_run, accelerator="F7")
+        run_menu.add_separator()
+        run_menu.add_command(label="Limpiar Salidas", command=self.clear_outputs)
         
         # Menú Ejemplos (movido desde botones)
         examples_menu = Menu(menubar, tearoff=0,
@@ -145,21 +150,103 @@ class AlchemistIDE:
         
     def setup_ui(self):
         """Configura la interfaz de usuario minimalista"""
-        # Frame principal sin titulo grande
+        # Frame principal
         main_frame = tk.Frame(self.root, bg=self.colors['bg_primary'])
         main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # Panel superior: Editor de codigo
-        self.setup_code_editor(main_frame)
+        # PanedWindow para hacer el panel inferior redimensionable
+        self.paned_window = tk.PanedWindow(
+            main_frame,
+            orient=tk.VERTICAL,
+            sashwidth=8,
+            bg=self.colors['border'],
+            sashrelief=tk.RAISED,
+            showhandle=True
+        )
+        self.paned_window.pack(fill=tk.BOTH, expand=True)
         
-        # Panel inferior: Salidas con notebook y tabs blancos
-        self.setup_output_panel(main_frame)
+        # Panel superior: Editor de codigo con toolbar (dentro del PanedWindow)
+        self.setup_code_editor(self.paned_window)
+        
+        # Panel inferior: Salidas redimensionables (dentro del PanedWindow)
+        self.setup_output_panel(self.paned_window)
         
     def setup_code_editor(self, parent):
         """Configura el editor de codigo minimalista"""
         # Frame del editor
-        editor_frame = tk.LabelFrame(
-            parent,
+        editor_frame = tk.Frame(parent, bg=self.colors['bg_primary'])
+        
+        # Toolbar con botones de compilar/ejecutar
+        toolbar = tk.Frame(editor_frame, bg=self.colors['bg_primary'], height=40)
+        toolbar.pack(fill=tk.X, padx=5, pady=(5, 0))
+        
+        # Botón Compilar
+        compile_btn = tk.Button(
+            toolbar,
+            text="Compilar (F5)",
+            command=self.compile_code,
+            font=self.fonts['button'],
+            bg=self.colors['button_bg'],
+            fg=self.colors['button_fg'],
+            relief=tk.SOLID,
+            bd=1,
+            padx=15,
+            pady=5,
+            cursor='hand2'
+        )
+        compile_btn.pack(side=tk.LEFT, padx=5)
+        
+        # Botón Ejecutar
+        run_btn = tk.Button(
+            toolbar,
+            text="Ejecutar (F6)",
+            command=self.run_code,
+            font=self.fonts['button'],
+            bg=self.colors['button_bg'],
+            fg=self.colors['button_fg'],
+            relief=tk.SOLID,
+            bd=1,
+            padx=15,
+            pady=5,
+            cursor='hand2'
+        )
+        run_btn.pack(side=tk.LEFT, padx=5)
+        
+        # Botón Compilar y Ejecutar
+        compile_run_btn = tk.Button(
+            toolbar,
+            text="Compilar y Ejecutar (F7)",
+            command=self.compile_and_run,
+            font=self.fonts['button'],
+            bg=self.colors['button_bg'],
+            fg=self.colors['button_fg'],
+            relief=tk.SOLID,
+            bd=1,
+            padx=15,
+            pady=5,
+            cursor='hand2'
+        )
+        compile_run_btn.pack(side=tk.LEFT, padx=5)
+        
+        # Botón Limpiar
+        clear_btn = tk.Button(
+            toolbar,
+            text="Limpiar",
+            command=self.clear_outputs,
+            font=self.fonts['button'],
+            bg=self.colors['button_bg'],
+            fg=self.colors['button_fg'],
+            relief=tk.SOLID,
+            bd=1,
+            padx=15,
+            pady=5,
+            cursor='hand2'
+        )
+        clear_btn.pack(side=tk.LEFT, padx=5)
+        
+        # LabelFrame para el editor
+        editor_label_frame = tk.LabelFrame(
+            editor_frame,
             text="Editor de Codigo",
             font=self.fonts['title'],
             bg=self.colors['bg_primary'],
@@ -167,11 +254,11 @@ class AlchemistIDE:
             relief=tk.SOLID,
             bd=1
         )
-        editor_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 5))
+        editor_label_frame.pack(fill=tk.BOTH, expand=True, pady=5)
         
         # Editor de texto
         self.code_editor = scrolledtext.ScrolledText(
-            editor_frame,
+            editor_label_frame,
             wrap=tk.NONE,
             font=self.fonts['code'],
             bg=self.colors['bg_primary'],
@@ -192,8 +279,10 @@ Transmutation GateOfTruth() -> void {
     Solid power = 100
     Inscription name = "Edward Elric"
     
-    Transmute("Poder: " + power)
-    Transmute("Alquimista: " + name)
+    Transmute("Poder: ")
+    Transmute(power)
+    Transmute("Alquimista: ")
+    Transmute(name)
     
     Observe (power > 50) {
         Transmute("Transmutacion exitosa")
@@ -202,11 +291,13 @@ Transmutation GateOfTruth() -> void {
         
         self.code_editor.insert('1.0', initial_code)
         
+        # Agregar el editor_frame al PanedWindow del padre
+        parent.add(editor_frame, minsize=300)
+        
     def setup_output_panel(self, parent):
-        """Configura el panel de salidas con tabs blancos puros"""
+        """Configura el panel de salidas redimensionable"""
         # Frame para las salidas
         output_frame = tk.Frame(parent, bg=self.colors['bg_primary'])
-        output_frame.pack(fill=tk.BOTH, expand=False, pady=(5, 0))
         
         # Notebook con estilo personalizado para tabs blancos
         self.setup_notebook_style()
@@ -214,28 +305,12 @@ Transmutation GateOfTruth() -> void {
         self.notebook = ttk.Notebook(output_frame, style='Custom.TNotebook')
         self.notebook.pack(fill=tk.BOTH, expand=True)
         
-        # Tab 1: Informacion
-        info_frame = tk.Frame(self.notebook, bg=self.colors['bg_primary'])
-        self.notebook.add(info_frame, text=" Informacion")
-        
-        self.info_output = scrolledtext.ScrolledText(
-            info_frame,
-            height=15,
-            font=self.fonts['main'],
-            bg=self.colors['bg_primary'],
-            fg=self.colors['fg_primary'],
-            relief=tk.FLAT,
-            bd=0
-        )
-        self.info_output.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
-        # Tab 2: Errores
+        # Tab 1: Errores
         error_frame = tk.Frame(self.notebook, bg=self.colors['bg_primary'])
         self.notebook.add(error_frame, text=" Errores")
         
         self.error_output = scrolledtext.ScrolledText(
             error_frame,
-            height=15,
             font=self.fonts['main'],
             bg=self.colors['bg_primary'],
             fg=self.colors['fg_primary'],
@@ -244,13 +319,26 @@ Transmutation GateOfTruth() -> void {
         )
         self.error_output.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # Tab 3: Programa
+        # Tab 2: Información de Compilación
+        info_frame = tk.Frame(self.notebook, bg=self.colors['bg_primary'])
+        self.notebook.add(info_frame, text=" Compilacion")
+        
+        self.info_output = scrolledtext.ScrolledText(
+            info_frame,
+            font=self.fonts['main'],
+            bg=self.colors['bg_primary'],
+            fg=self.colors['fg_primary'],
+            relief=tk.FLAT,
+            bd=0
+        )
+        self.info_output.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Tab 3: Salida del Programa
         program_frame = tk.Frame(self.notebook, bg=self.colors['bg_primary'])
-        self.notebook.add(program_frame, text=" Programa")
+        self.notebook.add(program_frame, text=" Salida")
         
         self.program_output = scrolledtext.ScrolledText(
             program_frame,
-            height=15,
             font=self.fonts['main'],
             bg=self.colors['bg_primary'],
             fg=self.colors['fg_primary'],
@@ -261,6 +349,9 @@ Transmutation GateOfTruth() -> void {
         
         # Mostrar informacion de bienvenida
         self.show_welcome_info()
+        
+        # Agregar el output_frame al PanedWindow
+        parent.add(output_frame, minsize=200)
         
     def setup_notebook_style(self):
         """Configura estilo personalizado para tabs blancos puros"""
@@ -296,8 +387,9 @@ Transmutation GateOfTruth() -> void {
         self.root.bind('<Control-s>', lambda e: self.save_file())
         self.root.bind('<Control-Shift-S>', lambda e: self.save_file_as())
         self.root.bind('<Control-q>', lambda e: self.on_closing())
-        self.root.bind('<F6>', lambda e: self.lexical_analysis())
-        self.root.bind('<F7>', lambda e: self.syntactic_analysis())
+        self.root.bind('<F5>', lambda e: self.compile_code())
+        self.root.bind('<F6>', lambda e: self.run_code())
+        self.root.bind('<F7>', lambda e: self.compile_and_run())
         
         # Detectar cambios en el codigo
         self.code_editor.bind('<KeyPress>', self.on_text_change)
@@ -387,7 +479,210 @@ Transmutation GateOfTruth() -> void {
             self.save_file()
             
     # ========================================
-    # ANALISIS DE CODIGO
+    # COMPILACION Y EJECUCION
+    # ========================================
+    
+    def compile_code(self):
+        """Compilar el código sin ejecutarlo"""
+        self.clear_outputs()
+        code = self.code_editor.get('1.0', tk.END).strip()
+        
+        if not code:
+            self.error_output.insert('1.0', "No hay codigo para compilar")
+            self.notebook.select(0)  # Mostrar tab de errores
+            return
+        
+        try:
+            # Compilar usando AlchemistCompiler
+            compiler = AlchemistCompiler()
+            
+            # Realizar compilación (sin ejecutar)
+            self.info_output.insert('1.0', "COMPILACION INICIADA...\n")
+            self.info_output.insert(tk.END, "="*50 + "\n\n")
+            
+            # Análisis Léxico
+            self.info_output.insert(tk.END, "Analisis Lexico... ")
+            lexer = AlchemistLexer()
+            tokens = lexer.tokenize(code)
+            self.info_output.insert(tk.END, f"OK ({len(tokens)} tokens)\n")
+            
+            # Análisis Sintáctico
+            self.info_output.insert(tk.END, "Analisis Sintactico... ")
+            parser = AlchemistParser()
+            ast = parser.parse(code)
+            self.info_output.insert(tk.END, f"OK ({len(ast.functions)} funciones)\n")
+            
+            # Análisis Semántico
+            self.info_output.insert(tk.END, "Analisis Semantico... ")
+            from src.semantic_analyzer import AlchemistSemanticAnalyzer
+            semantic = AlchemistSemanticAnalyzer()
+            semantic.analyze(ast)
+            self.info_output.insert(tk.END, "OK\n")
+            
+            # Generación de Código
+            self.info_output.insert(tk.END, "Generacion de Codigo... ")
+            from src.code_generator import AlchemistCodeGenerator
+            codegen = AlchemistCodeGenerator()
+            bytecode = codegen.generate(ast)
+            self.info_output.insert(tk.END, f"OK ({len(bytecode)} instrucciones)\n\n")
+            
+            self.info_output.insert(tk.END, "="*50 + "\n")
+            self.info_output.insert(tk.END, "COMPILACION EXITOSA\n\n")
+            
+            # Mostrar información adicional
+            self.info_output.insert(tk.END, "Estadisticas:\n")
+            self.info_output.insert(tk.END, f"   - Tokens: {len(tokens)}\n")
+            self.info_output.insert(tk.END, f"   - Funciones: {len(ast.functions)}\n")
+            self.info_output.insert(tk.END, f"   - Instrucciones de bytecode: {len(bytecode)}\n")
+            
+            # Guardar bytecode y metadatos para ejecución posterior
+            self.compiled_bytecode = bytecode
+            self.compiled_variables = codegen.variables
+            self.compiled_functions = codegen.functions
+            
+            # Cambiar a tab de información
+            self.notebook.select(1)
+            
+        except Exception as e:
+            self.error_output.insert('1.0', f"ERROR DE COMPILACION\n")
+            self.error_output.insert(tk.END, "="*50 + "\n\n")
+            self.error_output.insert(tk.END, f"{str(e)}\n")
+            self.notebook.select(0)  # Mostrar tab de errores
+            messagebox.showerror("Error de Compilacion", str(e))
+    
+    def run_code(self):
+        """Ejecutar código previamente compilado"""
+        if not hasattr(self, 'compiled_bytecode') or not self.compiled_bytecode:
+            messagebox.showwarning("Ejecutar", "Debe compilar el codigo primero (F5)")
+            return
+        
+        try:
+            self.program_output.delete('1.0', tk.END)
+            self.program_output.insert('1.0', "EJECUTANDO PROGRAMA...\n")
+            self.program_output.insert(tk.END, "="*50 + "\n\n")
+            
+            # Ejecutar usando el intérprete
+            from src.interpreter import AlchemistInterpreter
+            interpreter = AlchemistInterpreter()
+            
+            # Cargar el programa
+            interpreter.load_program(
+                self.compiled_bytecode,
+                self.compiled_variables,
+                self.compiled_functions
+            )
+            
+            # Capturar salida
+            import io
+            from contextlib import redirect_stdout
+            
+            output_buffer = io.StringIO()
+            with redirect_stdout(output_buffer):
+                output_lines = interpreter.execute()
+            
+            # Mostrar salida del intérprete
+            if output_lines:
+                for line in output_lines:
+                    self.program_output.insert(tk.END, line + "\n")
+            
+            # También mostrar stdout si hay
+            stdout_output = output_buffer.getvalue()
+            if stdout_output:
+                self.program_output.insert(tk.END, stdout_output)
+            
+            if not output_lines and not stdout_output:
+                self.program_output.insert(tk.END, "(sin salida)\n")
+            
+            self.program_output.insert(tk.END, "\n" + "="*50 + "\n")
+            self.program_output.insert(tk.END, "EJECUCION COMPLETADA\n")
+            
+            # Cambiar a tab de salida
+            self.notebook.select(2)
+            
+        except Exception as e:
+            self.error_output.delete('1.0', tk.END)
+            self.error_output.insert('1.0', f"ERROR DE EJECUCION\n")
+            self.error_output.insert(tk.END, "="*50 + "\n\n")
+            self.error_output.insert(tk.END, f"{str(e)}\n")
+            self.notebook.select(0)  # Mostrar tab de errores
+            messagebox.showerror("Error de Ejecucion", str(e))
+    
+    def compile_and_run(self):
+        """Compilar y ejecutar el código en un solo paso"""
+        self.clear_outputs()
+        code = self.code_editor.get('1.0', tk.END).strip()
+        
+        if not code:
+            self.error_output.insert('1.0', "No hay codigo para compilar")
+            self.notebook.select(0)
+            return
+        
+        try:
+            # Usar el compilador
+            compiler = AlchemistCompiler()
+            compiler.set_verbose(False)  # Desactivar mensajes verbosos
+            
+            # Mostrar proceso en la tab de compilación
+            self.info_output.insert('1.0', "COMPILANDO Y EJECUTANDO...\n")
+            self.info_output.insert(tk.END, "="*50 + "\n\n")
+            
+            # Fase 1: Compilar
+            self.info_output.insert(tk.END, "Compilando... ")
+            compilation_result = compiler.compile(code)
+            
+            if not compilation_result.success:
+                # Mostrar errores de compilación
+                self.error_output.insert('1.0', "ERROR DE COMPILACION\n")
+                self.error_output.insert(tk.END, "="*50 + "\n\n")
+                for error in compilation_result.errors:
+                    self.error_output.insert(tk.END, f"{error}\n")
+                self.notebook.select(0)
+                return
+            
+            self.info_output.insert(tk.END, "OK\n")
+            
+            # Fase 2: Ejecutar
+            self.info_output.insert(tk.END, "Ejecutando... ")
+            
+            # Capturar salida del programa
+            from src.interpreter import AlchemistInterpreter
+            interpreter = AlchemistInterpreter()
+            interpreter.load_program(
+                compilation_result.instructions,
+                compilation_result.variables,
+                compilation_result.functions
+            )
+            
+            output_lines = interpreter.execute()
+            
+            self.info_output.insert(tk.END, "OK\n\n")
+            self.info_output.insert(tk.END, "Compilacion y ejecucion exitosa\n")
+            
+            # Mostrar salida del programa
+            self.program_output.insert('1.0', "SALIDA DEL PROGRAMA:\n")
+            self.program_output.insert(tk.END, "="*50 + "\n\n")
+            
+            if output_lines:
+                for line in output_lines:
+                    self.program_output.insert(tk.END, line + "\n")
+            else:
+                self.program_output.insert(tk.END, "(sin salida)\n")
+            
+            self.program_output.insert(tk.END, "\n" + "="*50 + "\n")
+            self.program_output.insert(tk.END, "EJECUCION COMPLETADA\n")
+            
+            # Cambiar a tab de salida del programa
+            self.notebook.select(2)
+            
+        except Exception as e:
+            self.error_output.insert('1.0', f"ERROR\n")
+            self.error_output.insert(tk.END, "="*50 + "\n\n")
+            self.error_output.insert(tk.END, f"{str(e)}\n")
+            self.notebook.select(0)  # Mostrar tab de errores
+            messagebox.showerror("Error", str(e))
+    
+    # ========================================
+    # ANALISIS DE CODIGO (LEGACY - MANTENER PARA COMPATIBILIDAD)
     # ========================================
     
     def lexical_analysis(self):
@@ -648,20 +943,36 @@ Transmutation GateOfTruth() -> void {
     
     def show_welcome_info(self):
         """Mostrar informacion de bienvenida"""
-        welcome = """ALCHEMIST IDE - CiRCULO DE TRANSMUTACION
+        welcome = """
+================================================================
+                    ALCHEMIST IDE v1.0
+              Circulo de Transmutacion Supremo
+================================================================
 
-Lenguaje Alchemist - Inspirado en Fullmetal Alchemist Brotherhood
+"La humanidad no puede obtener nada sin dar algo a cambio.
+Para obtener algo, algo de igual valor debe perderse.
+Esa es la Ley de Intercambio Equivalente de la Alquimia."
 
-Funcion Principal: GateOfTruth()
-Tipos Alquimicos: Solid, Liquid, Inscription, Principle
-Valores: Accepted (true), Rejected (false)
-Transmutacion I/O: Transmute(), Absorb()
-Observaciones(if-elseif-else): Observe, Alternatively, Inevitably
-Ciclos: AlchemicCycle, TransmuteUntil
+COMPILAR Y EJECUTAR:
+   - F5  - Compilar codigo
+   - F6  - Ejecutar codigo compilado
+   - F7  - Compilar y ejecutar en un paso
 
-"Para obtener algo, algo de igual valor debe ser perdido"
+ARCHIVOS:
+   - Ctrl+N - Nuevo archivo
+   - Ctrl+O - Abrir archivo
+   - Ctrl+S - Guardar
+   
+TEMA:
+   - F2 - Cambiar entre modo oscuro/claro
 
- """
+================================================================
+
+El circulo de transmutacion esta completo.
+Escribe tu codigo Alchemist y presiona F7 para ejecutarlo.
+
+================================================================
+"""
 
         self.info_output.delete('1.0', tk.END)
         self.info_output.insert('1.0', welcome)
@@ -806,6 +1117,43 @@ Transmutation calcularPoder(Solid edad) -> Solid {
     } Inevitably {
         Transmute("APRENDIZ")
     }
+}''',
+            "Arrays Alquimicos": '''Transmutation GateOfTruth() -> void {
+    // Declarar array de enteros
+    AlchemicArray[Solid, 5] numeros
+
+    // Asignar valores
+    numeros[0] = 10
+    numeros[1] = 20
+    numeros[2] = 30
+    numeros[3] = 40
+    numeros[4] = 50
+
+    // Mostrar valores
+    Transmute("Array de numeros:")
+    Transmute(numeros[0])
+    Transmute(numeros[1])
+    Transmute(numeros[2])
+
+    // Modificar elemento
+    numeros[2] = 100
+    Transmute("Modificado:")
+    Transmute(numeros[2])
+
+    // Array de flotantes
+    AlchemicArray[Liquid, 3] temps
+    temps[0] = 25.5
+    temps[1] = 30.2
+    temps[2] = 28.7
+
+    Transmute("Temperaturas:")
+    Transmute(temps[0])
+    Transmute(temps[1])
+
+    // Operaciones con arrays
+    Solid suma = numeros[0] + numeros[1]
+    Transmute("Suma:")
+    Transmute(suma)
 }'''
         }
 

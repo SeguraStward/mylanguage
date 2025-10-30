@@ -102,6 +102,24 @@ class Assignment(Statement):
 
 
 @dataclass
+class ArrayDeclaration(Statement):
+    """Declaracion de array: AlchemicArray[Solid, 5] numeros"""
+    name: str
+    element_type: str
+    size: int
+    line: int
+
+
+@dataclass
+class ArrayAssignment(Statement):
+    """Asignacion a elemento de array: numeros[0] = 10"""
+    name: str
+    index: Expression
+    value: Expression
+    line: int
+
+
+@dataclass
 class WhileStatement(Statement):
     """Ciclo while"""
     condition: Expression
@@ -176,6 +194,14 @@ class FunctionCall(Expression):
 class Variable(Expression):
     """Referencia a variable"""
     name: str
+    line: int
+
+
+@dataclass
+class ArrayAccess(Expression):
+    """Acceso a elemento de array: numeros[0]"""
+    name: str
+    index: Expression
     line: int
 
 
@@ -381,9 +407,17 @@ class AlchemistParser:
         if self._match(TokenType.CONTINUE):
             return ContinueStatement(self._previous().line)
         
+        # Verificar declaracion de array
+        if self._match(TokenType.ALCHEMICARRAY):
+            return self._parse_array_declaration()
+        
         # Verificar declaracion de variable o asignacion
         if self._check_variable_declaration():
             return self._parse_variable_declaration()
+        
+        # Verificar asignación a array: nombre[indice] = valor
+        if self._check_array_assignment():
+            return self._parse_array_assignment()
         
         if self._check_assignment():
             return self._parse_assignment()
@@ -430,6 +464,73 @@ class AlchemistParser:
         value = self._parse_expression()
         
         return Assignment(name, value, line)
+    
+    def _check_array_assignment(self) -> bool:
+        """Verifica si es asignacion a array: nombre[indice] = valor"""
+        if self.current + 1 < len(self.tokens):
+            return (self._check(TokenType.IDENTIFIER) and 
+                   self.tokens[self.current + 1].type == TokenType.LBRACKET)
+        return False
+    
+    def _parse_array_declaration(self) -> 'ArrayDeclaration':
+        """Analiza declaracion de array: AlchemicArray[Solid, 5] numeros"""
+        line = self._previous().line
+        
+        # Esperar [
+        self._consume(TokenType.LBRACKET, "Se esperaba '[' despues de 'AlchemicArray'")
+        
+        # Tipo de elementos
+        type_token = self._advance()
+        if type_token.type not in [TokenType.SOLID_TYPE, TokenType.LIQUID_TYPE, 
+                                    TokenType.INSCRIPTION_TYPE, TokenType.PRINCIPLE_TYPE]:
+            raise ParseError(f"Tipo de elemento invalido para array: {type_token.value}", 
+                           type_token.line, type_token.column)
+        element_type = type_token.value
+        
+        # Esperar ,
+        self._consume(TokenType.COMMA, "Se esperaba ',' despues del tipo de elemento")
+        
+        # Tamaño del array
+        size_token = self._consume(TokenType.INTEGER, "Se esperaba tamaño del array (numero entero)")
+        size = int(size_token.value)
+        
+        if size <= 0:
+            raise ParseError(f"El tamaño del array debe ser mayor a 0", 
+                           size_token.line, size_token.column)
+        
+        # Esperar ]
+        self._consume(TokenType.RBRACKET, "Se esperaba ']' despues del tamaño")
+        
+        # Nombre del array
+        name_token = self._consume(TokenType.IDENTIFIER, "Se esperaba nombre del array")
+        name = name_token.value
+        
+        return ArrayDeclaration(name, element_type, size, line)
+    
+    def _parse_array_assignment(self) -> 'ArrayAssignment':
+        """Analiza asignacion a array: numeros[0] = 10"""
+        line = self._peek().line
+        
+        # Nombre del array
+        name_token = self._consume(TokenType.IDENTIFIER, "Se esperaba nombre del array")
+        name = name_token.value
+        
+        # [
+        self._consume(TokenType.LBRACKET, "Se esperaba '['")
+        
+        # Indice
+        index = self._parse_expression()
+        
+        # ]
+        self._consume(TokenType.RBRACKET, "Se esperaba ']'")
+        
+        # =
+        self._consume(TokenType.ASSIGN, "Se esperaba '='")
+        
+        # Valor
+        value = self._parse_expression()
+        
+        return ArrayAssignment(name, index, value, line)
     
     def _parse_observe_statement(self) -> ObserveStatement:
         """Analiza una declaracion Observe"""
@@ -616,9 +717,20 @@ class AlchemistParser:
         return self._parse_call()
     
     def _parse_call(self) -> Expression:
-        """Analiza llamadas a funcion"""
+        """Analiza llamadas a funcion y acceso a arrays"""
         expr = self._parse_primary()
         
+        # Acceso a array: nombre[indice]
+        if self._match(TokenType.LBRACKET):
+            if isinstance(expr, Variable):
+                index = self._parse_expression()
+                self._consume(TokenType.RBRACKET, "Se esperaba ']' despues del indice")
+                return ArrayAccess(expr.name, index, expr.line)
+            else:
+                raise ParseError("Solo se puede acceder a arrays con []", 
+                               self._previous().line, self._previous().column)
+        
+        # Llamada a función: nombre(args)
         if self._match(TokenType.LPAREN):
             # Es una llamada a funcion
             if isinstance(expr, Variable):

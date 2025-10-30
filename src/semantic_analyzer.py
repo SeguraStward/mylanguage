@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Analizador Semantico para aurum
+Analizador Semantico para Alchemist
 Este archivo se encarga de revisar que el codigo tenga sentido, tipos correctos 
 """
 
@@ -10,10 +10,10 @@ from dataclasses import dataclass
 # importamos todas las clases del parser que necesitamos para trabajar
 from .parser import (
     Program, Function, Parameter, Statement, Expression,
-    VariableDeclaration, Assignment, IfStatement, WhileStatement, 
+    VariableDeclaration, Assignment, ObserveStatement, WhileStatement, 
     ForStatement, ReturnStatement, BreakStatement, ContinueStatement,
     ExpressionStatement, BinaryOperation, UnaryOperation, FunctionCall,
-    Variable, Literal
+    Variable, Literal, AlternativelyPart, ArrayDeclaration, ArrayAssignment, ArrayAccess
 )
 
 
@@ -26,6 +26,9 @@ class Symbol:
     parameters: Optional[List[Parameter]] = None
     return_type: Optional[str] = None
     is_constant: bool = False  # para constantes, aunque no las usemos aun
+    is_array: bool = False  # True si es un array
+    array_element_type: Optional[str] = None  # Tipo de elementos del array
+    array_size: Optional[int] = None  # Tamaño del array
     line: int = 0
 
 
@@ -79,7 +82,7 @@ class SemanticError(Exception):
         super().__init__(f"Error semantico en linea {line}: {message}")
 
 
-class aurumSemanticAnalyzer:
+class AlchemistSemanticAnalyzer:
     """la clase principal que se encarga de analizar todo el codigo"""
     
     def __init__(self):
@@ -96,8 +99,42 @@ class aurumSemanticAnalyzer:
         self._agregar_funciones_del_sistema()
     
     def _agregar_funciones_del_sistema(self) -> None:
-        """agrega las funciones que ya vienen con aurum como print, read, etc"""
+        """agrega las funciones que ya vienen con Alchemist como Transmute, Absorb, etc"""
         
+        # funcion Absorb() que devuelve string (lee entrada)
+        simbolo_absorb = Symbol(
+            name="Absorb",
+            type="Inscription",
+            is_function=True,
+            parameters=[],
+            return_type="Inscription",
+            line=0
+        )
+        self.global_table.declare(simbolo_absorb)
+        
+        # funcion AbsorbSolid() que devuelve int (lee un entero)
+        simbolo_absorbsolid = Symbol(
+            name="AbsorbSolid",
+            type="Solid",
+            is_function=True,
+            parameters=[],
+            return_type="Solid",
+            line=0
+        )
+        self.global_table.declare(simbolo_absorbsolid)
+        
+        # funcion Transmute que imprime (acepta cualquier tipo)
+        simbolo_transmute = Symbol(
+            name="Transmute",
+            type="void",
+            is_function=True,
+            parameters=[Parameter("value", "any")],  # Acepta cualquier tipo
+            return_type="void",
+            line=0
+        )
+        self.global_table.declare(simbolo_transmute)
+        
+        # Funciones tradicionales para compatibilidad
         # funcion read() que devuelve string
         simbolo_read = Symbol(
             name="read",
@@ -143,14 +180,14 @@ class aurumSemanticAnalyzer:
             for funcion in arbol_sintactico.functions:
                 self._declarar_funcion(funcion)
             
-            # verificamos que exista la funcion main, esto es obligatorio
-            simbolo_main = self.global_table.lookup("main")
+            # verificamos que exista la funcion GateOfTruth, esto es obligatorio
+            simbolo_main = self.global_table.lookup("GateOfTruth")
             if not simbolo_main:
-                self.errors.append(SemanticError("Se necesita una funcion 'main' para que el programa funcione", 1))
+                self.errors.append(SemanticError("Se necesita una funcion 'GateOfTruth' para que el programa funcione", 1))
             elif simbolo_main.return_type != "void":
-                self.errors.append(SemanticError("La funcion 'main' debe devolver 'void', no otra cosa", 1))
+                self.errors.append(SemanticError("La funcion 'GateOfTruth' debe devolver 'void', no otra cosa", 1))
             elif simbolo_main.parameters:
-                self.errors.append(SemanticError("La funcion 'main' no puede tener parametros", 1))
+                self.errors.append(SemanticError("La funcion 'GateOfTruth' no puede tener parametros", 1))
             
             # ahora analizamos el contenido de cada funcion
             for funcion in arbol_sintactico.functions:
@@ -221,17 +258,17 @@ class aurumSemanticAnalyzer:
         for declaracion in declaraciones:
             if isinstance(declaracion, ReturnStatement):
                 return True
-            # tambien revisamos dentro de los if por si acaso
-            elif isinstance(declaracion, IfStatement):
+            # tambien revisamos dentro de los observe por si acaso
+            elif isinstance(declaracion, ObserveStatement):
                 # debe tener return en todas las ramas para contar como valido
                 tiene_then = self._tiene_return(declaracion.then_body)
                 tiene_else = False
-                if declaracion.else_body:
-                    tiene_else = self._tiene_return(declaracion.else_body)
-                elif declaracion.elif_parts:
-                    # revisar los elif tambien, todos deben tener return
-                    for elif_part in declaracion.elif_parts:
-                        if self._tiene_return(elif_part.body):
+                if declaracion.inevitably_body:
+                    tiene_else = self._tiene_return(declaracion.inevitably_body)
+                elif declaracion.alternatively_parts:
+                    # revisar los alternatively tambien, todos deben tener return
+                    for alt_part in declaracion.alternatively_parts:
+                        if self._tiene_return(alt_part.body):
                             tiene_else = True
                             break
                 
@@ -242,14 +279,18 @@ class aurumSemanticAnalyzer:
     
     def _analizar_declaracion(self, declaracion: Statement) -> None:
         """
-        analiza una declaracion, puede ser variable, asignacion, if, etc
+        analiza una declaracion, puede ser variable, asignacion, observe, etc
         """
         if isinstance(declaracion, VariableDeclaration):
             self._analizar_declaracion_variable(declaracion)
+        elif isinstance(declaracion, ArrayDeclaration):
+            self._analizar_declaracion_array(declaracion)
         elif isinstance(declaracion, Assignment):
             self._analizar_asignacion(declaracion)
-        elif isinstance(declaracion, IfStatement):
-            self._analizar_if(declaracion)
+        elif isinstance(declaracion, ArrayAssignment):
+            self._analizar_asignacion_array(declaracion)
+        elif isinstance(declaracion, ObserveStatement):
+            self._analizar_observe(declaracion)
         elif isinstance(declaracion, WhileStatement):
             self._analizar_while(declaracion)
         elif isinstance(declaracion, ForStatement):
@@ -265,9 +306,11 @@ class aurumSemanticAnalyzer:
             self._analizar_expresion(declaracion.expression)
     
     def _analizar_declaracion_variable(self, declaracion_var: VariableDeclaration) -> None:
-        """analiza cuando declaramos una variable nueva como 'int x = 5'"""
+        """analiza cuando declaramos una variable nueva como 'Solid x = 5'"""
         # verificar que el tipo sea valido, solo aceptamos estos
-        tipos_validos = ["int", "float", "string", "bool"]
+        # Tipos alquímicos: Solid (int), Liquid (float), Inscription (string), Principle (bool)
+        # También soportamos los tipos tradicionales para compatibilidad
+        tipos_validos = ["int", "float", "string", "bool", "Solid", "Liquid", "Inscription", "Principle", "void"]
         if declaracion_var.type not in tipos_validos:
             self.errors.append(SemanticError(
                 f"El tipo '{declaracion_var.type}' no existe o no esta soportado", 
@@ -296,6 +339,135 @@ class aurumSemanticAnalyzer:
         except SemanticError as error:
             self.errors.append(error)
     
+    def _analizar_declaracion_array(self, declaracion_array: ArrayDeclaration) -> None:
+        """analiza declaracion de array: AlchemicArray[Solid, 5] numeros"""
+        # verificar que el tipo de elemento sea valido
+        tipos_validos = ["Solid", "Liquid", "Inscription", "Principle"]
+        if declaracion_array.element_type not in tipos_validos:
+            self.errors.append(SemanticError(
+                f"El tipo de elemento '{declaracion_array.element_type}' no es valido para arrays", 
+                declaracion_array.line
+            ))
+            return
+        
+        # verificar que el tamaño sea positivo (ya lo hace el parser pero por seguridad)
+        if declaracion_array.size <= 0:
+            self.errors.append(SemanticError(
+                f"El tamaño del array debe ser mayor a 0", 
+                declaracion_array.line
+            ))
+            return
+        
+        # crear simbolo para el array
+        simbolo_array = Symbol(
+            name=declaracion_array.name,
+            type="array",  # Tipo general "array"
+            is_array=True,
+            array_element_type=declaracion_array.element_type,
+            array_size=declaracion_array.size,
+            line=declaracion_array.line
+        )
+        
+        try:
+            self.current_table.declare(simbolo_array)
+        except SemanticError as error:
+            self.errors.append(error)
+    
+    def _analizar_asignacion_array(self, asignacion: ArrayAssignment) -> None:
+        """analiza asignacion a elemento de array: numeros[0] = 10"""
+        # verificar que el array existe
+        simbolo_array = self.current_table.lookup(asignacion.name)
+        if not simbolo_array:
+            self.errors.append(SemanticError(
+                f"El array '{asignacion.name}' no ha sido declarado", 
+                asignacion.line
+            ))
+            return
+        
+        # verificar que es realmente un array
+        if not simbolo_array.is_array:
+            self.errors.append(SemanticError(
+                f"'{asignacion.name}' no es un array, no se puede usar []", 
+                asignacion.line
+            ))
+            return
+        
+        # verificar que el indice sea de tipo Solid (entero)
+        tipo_indice = self._analizar_expresion(asignacion.index)
+        if tipo_indice and tipo_indice not in ["Solid", "int"]:
+            self.errors.append(SemanticError(
+                f"El indice del array debe ser Solid (entero), no '{tipo_indice}'", 
+                asignacion.line
+            ))
+        
+        # VALIDACION DE RANGO: si el indice es una constante, verificar que este en rango
+        from .parser import Literal
+        if isinstance(asignacion.index, Literal) and isinstance(asignacion.index.value, int):
+            indice_valor = asignacion.index.value
+            if indice_valor < 0:
+                self.errors.append(SemanticError(
+                    f"Indice de array negativo: {indice_valor}. Los indices deben ser >= 0", 
+                    asignacion.line
+                ))
+            elif indice_valor >= simbolo_array.array_size:
+                self.errors.append(SemanticError(
+                    f"Indice fuera de rango: {indice_valor}. El array '{asignacion.name}' tiene tamaño {simbolo_array.array_size} (indices validos: 0-{simbolo_array.array_size - 1})", 
+                    asignacion.line
+                ))
+        
+        # verificar que el valor asignado sea del mismo tipo que los elementos del array
+        tipo_valor = self._analizar_expresion(asignacion.value)
+        if tipo_valor and not self._tipos_compatibles(simbolo_array.array_element_type, tipo_valor):
+            self.errors.append(SemanticError(
+                f"No puedes asignar '{tipo_valor}' a un array de '{simbolo_array.array_element_type}'", 
+                asignacion.line
+            ))
+    
+    def _analizar_acceso_array(self, acceso: ArrayAccess) -> Optional[str]:
+        """analiza acceso a elemento de array: numeros[0]"""
+        # verificar que el array existe
+        simbolo_array = self.current_table.lookup(acceso.name)
+        if not simbolo_array:
+            self.errors.append(SemanticError(
+                f"El array '{acceso.name}' no ha sido declarado", 
+                acceso.line
+            ))
+            return None
+        
+        # verificar que es realmente un array
+        if not simbolo_array.is_array:
+            self.errors.append(SemanticError(
+                f"'{acceso.name}' no es un array, no se puede usar []", 
+                acceso.line
+            ))
+            return None
+        
+        # verificar que el indice sea de tipo Solid (entero)
+        tipo_indice = self._analizar_expresion(acceso.index)
+        if tipo_indice and tipo_indice not in ["Solid", "int"]:
+            self.errors.append(SemanticError(
+                f"El indice del array debe ser Solid (entero), no '{tipo_indice}'", 
+                acceso.line
+            ))
+        
+        # VALIDACION DE RANGO: si el indice es una constante, verificar que este en rango
+        from .parser import Literal
+        if isinstance(acceso.index, Literal) and isinstance(acceso.index.value, int):
+            indice_valor = acceso.index.value
+            if indice_valor < 0:
+                self.errors.append(SemanticError(
+                    f"Indice de array negativo: {indice_valor}. Los indices deben ser >= 0", 
+                    acceso.line
+                ))
+            elif indice_valor >= simbolo_array.array_size:
+                self.errors.append(SemanticError(
+                    f"Indice fuera de rango: {indice_valor}. El array '{acceso.name}' tiene tamaño {simbolo_array.array_size} (indices validos: 0-{simbolo_array.array_size - 1})", 
+                    acceso.line
+                ))
+        
+        # el tipo del acceso es el tipo de los elementos del array
+        return simbolo_array.array_element_type
+    
     def _analizar_asignacion(self, asignacion: Assignment) -> None:
         """analiza cuando asignamos un valor a una variable existente"""
         # verificar que la variable ya existe
@@ -323,34 +495,34 @@ class aurumSemanticAnalyzer:
                 asignacion.line
             ))
     
-    def _analizar_if(self, declaracion_if: IfStatement) -> None:
-        """analiza una declaracion if con sus elif y else"""
-        # la condicion del if debe ser booleana, sino no tiene sentido
-        tipo_condicion = self._analizar_expresion(declaracion_if.condition)
+    def _analizar_observe(self, declaracion_observe: ObserveStatement) -> None:
+        """analiza una declaracion observe con sus alternatively e inevitably"""
+        # la condicion del observe debe ser booleana, sino no tiene sentido
+        tipo_condicion = self._analizar_expresion(declaracion_observe.condition)
         if tipo_condicion and tipo_condicion != "bool":
             self.errors.append(SemanticError(
-                "La condicion del 'if' tiene que ser true o false (bool)",
-                declaracion_if.line
+                "La condicion del 'observe' tiene que ser true o false (bool)",
+                declaracion_observe.line
             ))
         
         # analizamos el bloque del then (lo que pasa si es true)
-        for declaracion in declaracion_if.then_body:
+        for declaracion in declaracion_observe.then_body:
             self._analizar_declaracion(declaracion)
         
-        # analizamos todos los elif si los hay
-        for parte_elif in declaracion_if.elif_parts:
-            tipo_condicion_elif = self._analizar_expresion(parte_elif.condition)
-            if tipo_condicion_elif and tipo_condicion_elif != "bool":
+        # analizamos todos los alternatively si los hay
+        for parte_alt in declaracion_observe.alternatively_parts:
+            tipo_condicion_alt = self._analizar_expresion(parte_alt.condition)
+            if tipo_condicion_alt and tipo_condicion_alt != "bool":
                 self.errors.append(SemanticError(
-                    "La condicion del 'elif' tambien tiene que ser bool",
-                    declaracion_if.line
+                    "La condicion del 'alternatively' tambien tiene que ser bool",
+                    declaracion_observe.line
                 ))
-            for declaracion in parte_elif.body:
+            for declaracion in parte_alt.body:
                 self._analizar_declaracion(declaracion)
         
-        # analizamos el else si existe
-        if declaracion_if.else_body:
-            for declaracion in declaracion_if.else_body:
+        # analizamos el inevitably si existe
+        if declaracion_observe.inevitably_body:
+            for declaracion in declaracion_observe.inevitably_body:
                 self._analizar_declaracion(declaracion)
     
     def _analizar_while(self, declaracion_while: WhileStatement) -> None:
@@ -491,6 +663,10 @@ class aurumSemanticAnalyzer:
                 return None
             
             return simbolo.type
+        
+        elif isinstance(expresion, ArrayAccess):
+            # acceso a elemento de array: numeros[0]
+            return self._analizar_acceso_array(expresion)
         
         elif isinstance(expresion, BinaryOperation):
             # operaciones como +, -, *, ==, etc
@@ -639,29 +815,64 @@ class aurumSemanticAnalyzer:
     def _tipos_compatibles(self, tipo_esperado: str, tipo_actual: str) -> bool:
         """
         verifica si dos tipos son compatibles entre si
-        por ahora solo aceptamos tipos exactamente iguales
+        Mapea los tipos alquímicos a los tradicionales:
+        Solid <-> int, Liquid <-> float, Inscription <-> string, Principle <-> bool
         """
-        return tipo_esperado == tipo_actual
+        # Mapeo de tipos alquímicos a tradicionales
+        tipo_map = {
+            "Solid": "int",
+            "Liquid": "float",
+            "Inscription": "string",
+            "Principle": "bool"
+        }
+        
+        # Normalizar tipos (convertir alquímicos a tradicionales)
+        tipo_esperado_norm = tipo_map.get(tipo_esperado, tipo_esperado)
+        tipo_actual_norm = tipo_map.get(tipo_actual, tipo_actual)
+        
+        # Permitir "any" para funciones que aceptan cualquier tipo (como Transmute)
+        if tipo_esperado_norm == "any" or tipo_actual_norm == "any":
+            return True
+        
+        return tipo_esperado_norm == tipo_actual_norm
     
     def _es_numerico(self, nombre_tipo: str) -> bool:
-        """verifica si un tipo es numerico (int o float)"""
-        return nombre_tipo in ["int", "float"]
+        """verifica si un tipo es numerico (int, float, Solid, Liquid)"""
+        tipo_map = {
+            "Solid": "int",
+            "Liquid": "float"
+        }
+        tipo_norm = tipo_map.get(nombre_tipo, nombre_tipo)
+        return tipo_norm in ["int", "float"]
     
     def _obtener_tipo_resultado_numerico(self, tipo_izquierdo: str, tipo_derecho: str) -> str:
         """
         decide que tipo devolver cuando operamos con numeros
-        si uno es float, el resultado es float
-        si ambos son int, el resultado es int
+        si uno es float/Liquid, el resultado es float
+        si ambos son int/Solid, el resultado es int
         """
-        if tipo_izquierdo == "float" or tipo_derecho == "float":
+        tipo_map = {
+            "Solid": "int",
+            "Liquid": "float"
+        }
+        tipo_izq_norm = tipo_map.get(tipo_izquierdo, tipo_izquierdo)
+        tipo_der_norm = tipo_map.get(tipo_derecho, tipo_derecho)
+        
+        if tipo_izq_norm == "float" or tipo_der_norm == "float":
+            # Devolver el tipo original si era alquímico
+            if tipo_izquierdo == "Liquid" or tipo_derecho == "Liquid":
+                return "Liquid"
             return "float"
+        # Devolver el tipo original si era alquímico
+        if tipo_izquierdo == "Solid" or tipo_derecho == "Solid":
+            return "Solid"
         return "int"
 
 
 def main():
     """funcion para probar el analizador semantico"""
-    from .lexer import AurumLexer
-    from .parser import AurumParser
+    from .lexer import AlchemistLexer
+    from .parser import AlchemistParser
     
     # codigo de prueba que tiene errores a proposito
     codigo_prueba = '''
@@ -693,14 +904,14 @@ def main():
     
     try:
         # analisis lexico
-        lexer = AurumLexer()
+        lexer = AlchemistLexer()
         
         # analisis sintactico  
-        parser = AurumParser()
+        parser = AlchemistParser()
         arbol = parser.parse(codigo_prueba)
         
         # analisis semantico
-        analizador = aurumSemanticAnalyzer()
+        analizador = AlchemistSemanticAnalyzer()
         errores = analizador.analyze(arbol)
         
         print("🔍 ANALISIS SEMANTICO TERMINADO")

@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """
-aurum Compiler - Compilador Principal
+Alchemist Compiler - Compilador Principal
 Integra todas las fases del proceso de compilación: léxico, sintáctico, semántico y generación de código
 """
 
 from typing import List, Optional, Dict, Any
 from dataclasses import dataclass
 
-from .lexer import AurumLexer, LexerError
-from .parser import AurumParser, ParseError
-from .semantic_analyzer import aurumSemanticAnalyzer, SemanticError
-from .code_generator import aurumCodeGenerator, CodeGeneratorError
-from .interpreter import aurumInterpreter, RuntimeError
+from .lexer import AlchemistLexer, LexerError
+from .parser import AlchemistParser, ParseError
+from .semantic_analyzer import AlchemistSemanticAnalyzer, SemanticError
+from .code_generator import AlchemistCodeGenerator, CodeGeneratorError
+from .interpreter import AlchemistInterpreter, RuntimeError
 
 
 @dataclass
@@ -35,16 +35,16 @@ class ExecutionResult:
     execution_time: float = 0.0
 
 
-class aurumCompiler:
-    """Compilador principal para aurum"""
+class AlchemistCompiler:
+    """Compilador principal para Alchemist"""
     
     def __init__(self):
         """Inicializa el compilador"""
-        self.lexer = AurumLexer()
-        self.parser = AurumParser()
-        self.semantic_analyzer = aurumSemanticAnalyzer()
-        self.code_generator = aurumCodeGenerator()
-        self.interpreter = aurumInterpreter()
+        self.lexer = AlchemistLexer()
+        self.parser = AlchemistParser()
+        self.semantic_analyzer = AlchemistSemanticAnalyzer()
+        self.code_generator = AlchemistCodeGenerator()
+        self.interpreter = AlchemistInterpreter()
         
         # Estado del compilador
         self.verbose = False
@@ -65,7 +65,7 @@ class aurumCompiler:
     
     def compile(self, source_code: str, output_file: Optional[str] = None) -> CompilationResult:
         """
-        Compila código fuente aurum
+        Compila código fuente Alchemist
         
         Args:
             source_code: Código fuente a compilar
@@ -130,7 +130,7 @@ class aurumCompiler:
                 print("🔍 Fase 3: Análisis Semántico...")
             
             # Crear nuevo analizador semántico para cada compilación
-            semantic_analyzer = aurumSemanticAnalyzer()
+            semantic_analyzer = AlchemistSemanticAnalyzer()
             semantic_errors = semantic_analyzer.analyze(ast)
             
             if semantic_errors:
@@ -285,15 +285,15 @@ class aurumCompiler:
     
     def get_language_info(self) -> Dict[str, Any]:
         """
-        Retorna información sobre el lenguaje aurum
+        Retorna información sobre el lenguaje Alchemist
         
         Returns:
             Diccionario con información del lenguaje
         """
         return {
-            "name": "aurum",
+            "name": "Alchemist",
             "version": "1.0",
-            "description": "Lenguaje de programación educativo con sintaxis similar a Go",
+            "description": "Lenguaje de programación educativo inspirado en Fullmetal Alchemist",
             "features": [
                 "Tipado estático con inferencia",
                 "Funciones con tipos de retorno",
@@ -323,51 +323,54 @@ class aurumCompiler:
 def main():
     """Función principal de demostración"""
     # Crear compilador
-    compiler = aurumCompiler()
+    compiler = AlchemistCompiler()
     compiler.set_verbose(True)
     compiler.set_debug(True)
     
     # Código de ejemplo
     example_code = '''
-    func main() -> void {
-        print("¡Hola, aurum!")
+    Transmutation GateOfTruth() -> void {
+        Transmute("¡Hola, Alchemist!")
         
-        int a = 15
-        int b = 25
-        int suma = a + b
+        Solid a = 15
+        Solid b = 25
+        Solid suma = a + b
         
-        print("Los números son: " + a + " y " + b)
-        print("Su suma es: " + suma)
+        Transmute("Los números son: ")
+        Transmute(a)
+        Transmute(" y ")
+        Transmute(b)
+        Transmute("Su suma es: ")
+        Transmute(suma)
         
-        if (suma > 30) {
-            print("La suma es mayor a 30")
-        } else {
-            print("La suma es menor o igual a 30")
+        Observe (suma > 30) {
+            Transmute("La suma es mayor a 30")
+        } Inevitably {
+            Transmute("La suma es menor o igual a 30")
         }
         
-        int factorial_5 = factorial(5)
-        print("El factorial de 5 es: " + factorial_5)
+        Solid factorial_5 = factorial(5)
+        Transmute("El factorial de 5 es: ")
+        Transmute(factorial_5)
     }
     
-    func factorial(int n) -> int {
-        if (n <= 1) {
-            return 1
-        } else {
-            return n * factorial(n - 1)
+    Transmutation factorial(Solid n) -> Solid {
+        Observe (n <= 1) {
+            EquivalentExchange 1
+        } Inevitably {
+            EquivalentExchange n * factorial(n - 1)
         }
     }
     '''
     
-    print("🌟 DEMOSTRACIÓN DEL COMPILADOR aurum")
+    print("🌟 DEMOSTRACIÓN DEL COMPILADOR ALCHEMIST")
     print("=" * 60)
     
     # Compilar y ejecutar
     compilation_result, execution_result = compiler.compile_and_run(
-        example_code, 
-        output_file="ejemplo.auro"
-    )
-    
-    # Mostrar resultados
+        example_code,
+        output_file="ejemplo.alch"
+    )    # Mostrar resultados
     print("\n📊 RESULTADOS DE COMPILACIÓN:")
     print("=" * 40)
     

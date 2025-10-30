@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-aurum Code Generator - Generador de Código
+Alchemist Code Generator - Generador de Código
 Genera código intermedio y ejecutable a partir del AST validado semánticamente
 """
 
@@ -10,10 +10,10 @@ import json
 
 from .parser import (
     ASTNode, Program, Function, Parameter, Statement, Expression,
-    VariableDeclaration, Assignment, IfStatement, WhileStatement, 
+    VariableDeclaration, Assignment, ObserveStatement, WhileStatement, 
     ForStatement, ReturnStatement, BreakStatement, ContinueStatement,
     ExpressionStatement, BinaryOperation, UnaryOperation, FunctionCall,
-    Variable, Literal, ElifPart
+    Variable, Literal, AlternativelyPart, ArrayDeclaration, ArrayAssignment, ArrayAccess
 )
 
 
@@ -38,14 +38,15 @@ class CodeGeneratorError(Exception):
         super().__init__(f"Error en generación de código línea {line}: {message}")
 
 
-class aurumCodeGenerator:
-    """Generador de código para aurum"""
+class AlchemistCodeGenerator:
+    """Generador de código para Alchemist"""
     
     def __init__(self):
         """Inicializa el generador de código"""
         self.instructions: List[Instruction] = []
         self.variables: Dict[str, int] = {}  # nombre -> dirección
         self.functions: Dict[str, int] = {}  # nombre -> dirección
+        self.arrays: Dict[str, Dict[str, Any]] = {}  # nombre -> {base_addr, size, element_type}
         self.memory_counter = 0
         self.label_counter = 0
         self.current_function: Optional[str] = None
@@ -73,9 +74,9 @@ class aurumCodeGenerator:
         for function in ast.functions:
             self._generate_function(function)
         
-        # Agregar llamada a main al inicio
+        # Agregar llamada a GateOfTruth (función principal) al inicio
         main_call = [
-            Instruction("CALL", "main", 0),  # Llamar main con 0 argumentos
+            Instruction("CALL", "GateOfTruth", 0),  # Llamar GateOfTruth con 0 argumentos
             Instruction("HALT")  # Terminar programa
         ]
         
@@ -131,8 +132,12 @@ class aurumCodeGenerator:
             self._generate_variable_declaration(stmt)
         elif isinstance(stmt, Assignment):
             self._generate_assignment(stmt)
-        elif isinstance(stmt, IfStatement):
-            self._generate_if_statement(stmt)
+        elif isinstance(stmt, ArrayDeclaration):
+            self._generate_array_declaration(stmt)
+        elif isinstance(stmt, ArrayAssignment):
+            self._generate_array_assignment(stmt)
+        elif isinstance(stmt, ObserveStatement):
+            self._generate_observe_statement(stmt)
         elif isinstance(stmt, WhileStatement):
             self._generate_while_statement(stmt)
         elif isinstance(stmt, ForStatement):
@@ -173,15 +178,73 @@ class aurumCodeGenerator:
         # Almacenar en la variable
         self.instructions.append(Instruction("STORE", var_addr))
     
-    def _generate_if_statement(self, stmt: IfStatement) -> None:
-        """Genera código para declaración if"""
+    def _generate_array_declaration(self, stmt: ArrayDeclaration) -> None:
+        """Genera código para declaración de array"""
+        # Asignar dirección base para el array
+        base_addr = self._allocate_variable(stmt.name)
+        
+        # Guardar metadatos del array
+        self.arrays[stmt.name] = {
+            'base_addr': base_addr,
+            'size': stmt.size,
+            'element_type': stmt.element_type
+        }
+        
+        # Reservar espacio para todos los elementos del array
+        # Cada elemento del array necesita su propia dirección de memoria
+        for i in range(1, stmt.size):
+            self._allocate_variable(f"{stmt.name}_elem_{i}")
+        
+        # Inicializar todos los elementos con valor por defecto
+        default_value = self._get_default_value(stmt.element_type)
+        for i in range(stmt.size):
+            self.instructions.append(Instruction("LOAD_CONST", default_value))
+            self.instructions.append(Instruction("STORE", base_addr + i))
+    
+    def _generate_array_assignment(self, stmt: ArrayAssignment) -> None:
+        """Genera código para asignación a elemento de array"""
+        if stmt.name not in self.arrays:
+            raise Exception(f"Array '{stmt.name}' no declarado")
+        
+        array_info = self.arrays[stmt.name]
+        base_addr = array_info['base_addr']
+        array_size = array_info['size']
+        
+        # Evaluar el índice
+        self._generate_expression(stmt.index)
+        
+        # Evaluar el valor a asignar
+        self._generate_expression(stmt.value)
+        
+        # Almacenar en array[index]
+        # El intérprete necesita: índice en stack, valor en stack, dirección base, tamaño
+        self.instructions.append(Instruction("STORE_ARRAY", base_addr, array_size, stmt.name))
+    
+    def _generate_array_access(self, expr: ArrayAccess) -> None:
+        """Genera código para acceso a elemento de array"""
+        if expr.name not in self.arrays:
+            raise Exception(f"Array '{expr.name}' no declarado")
+        
+        array_info = self.arrays[expr.name]
+        base_addr = array_info['base_addr']
+        array_size = array_info['size']
+        
+        # Evaluar el índice
+        self._generate_expression(expr.index)
+        
+        # Cargar valor desde array[index]
+        # El intérprete necesita: índice en stack, dirección base, tamaño
+        self.instructions.append(Instruction("LOAD_ARRAY", base_addr, array_size, expr.name))
+    
+    def _generate_observe_statement(self, stmt: ObserveStatement) -> None:
+        """Genera código para declaración observe"""
         end_label = self._generate_label()
         else_label = self._generate_label()
         
         # Evaluar condición
         self._generate_expression(stmt.condition)
         
-        # Saltar al else si la condición es falsa
+        # Saltar al alternatively/inevitably si la condición es falsa
         self.instructions.append(Instruction("JUMP_IF_FALSE", else_label))
         
         # Generar código del bloque then
@@ -191,22 +254,22 @@ class aurumCodeGenerator:
         # Saltar al final
         self.instructions.append(Instruction("JUMP", end_label))
         
-        # Manejo de elif y else
+        # Manejo de alternatively e inevitably
         current_else_label = else_label
         
-        for elif_part in stmt.elif_parts:
-            # Etiqueta del elif actual
+        for alt_part in stmt.alternatively_parts:
+            # Etiqueta del alternatively actual
             self.instructions.append(Instruction("LABEL", current_else_label))
             
-            # Evaluar condición del elif
-            self._generate_expression(elif_part.condition)
+            # Evaluar condición del alternatively
+            self._generate_expression(alt_part.condition)
             
-            # Nueva etiqueta para el siguiente elif/else
+            # Nueva etiqueta para el siguiente alternatively/inevitably
             next_else_label = self._generate_label()
             self.instructions.append(Instruction("JUMP_IF_FALSE", next_else_label))
             
-            # Generar código del bloque elif
-            for s in elif_part.body:
+            # Generar código del bloque alternatively
+            for s in alt_part.body:
                 self._generate_statement(s)
             
             # Saltar al final
@@ -214,11 +277,11 @@ class aurumCodeGenerator:
             
             current_else_label = next_else_label
         
-        # Bloque else (si existe)
+        # Bloque inevitably (si existe)
         self.instructions.append(Instruction("LABEL", current_else_label))
         
-        if stmt.else_body:
-            for s in stmt.else_body:
+        if stmt.inevitably_body:
+            for s in stmt.inevitably_body:
                 self._generate_statement(s)
         
         # Etiqueta del final
@@ -339,6 +402,9 @@ class aurumCodeGenerator:
         
         elif isinstance(expr, FunctionCall):
             self._generate_function_call(expr)
+        
+        elif isinstance(expr, ArrayAccess):
+            self._generate_array_access(expr)
     
     def _generate_binary_operation(self, expr: BinaryOperation) -> None:
         """Genera código para operación binaria"""
@@ -437,9 +503,9 @@ class aurumCodeGenerator:
 
 def main():
     """Función de prueba del generador de código"""
-    from .lexer import AurumLexer
-    from .parser import AurumParser
-    from .semantic_analyzer import aurumSemanticAnalyzer
+    from .lexer import AlchemistLexer
+    from .parser import AlchemistParser
+    from .semantic_analyzer import AlchemistSemanticAnalyzer
     
     # Código de prueba
     test_code = '''
@@ -469,14 +535,14 @@ def main():
     
     try:
         # Análisis léxico
-        lexer = AurumLexer()
+        lexer = AlchemistLexer()
         
         # Análisis sintáctico
-        parser = AurumParser()
+        parser = AlchemistParser()
         ast = parser.parse(test_code)
         
         # Análisis semántico
-        analyzer = aurumSemanticAnalyzer()
+        analyzer = AlchemistSemanticAnalyzer()
         errors = analyzer.analyze(ast)
         
         if errors:
@@ -486,15 +552,15 @@ def main():
             return
         
         # Generación de código
-        generator = aurumCodeGenerator()
+        generator = AlchemistCodeGenerator()
         instructions = generator.generate(ast)
         
         # Mostrar código generado
         generator.print_code()
         
         # Guardar a archivo
-        generator.save_to_file("output.auro")
-        print(f"\n💾 Código guardado en 'output.auro'")
+        generator.save_to_file("output.alch")
+        print(f"\n💾 Código guardado en 'output.alch'")
         
     except Exception as e:
         print(f"❌ Error durante la generación: {e}")
