@@ -273,24 +273,6 @@ class AlchemistIDE:
         )
         self.code_editor.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # Codigo inicial minimalista
-        initial_code = """// CIRCULO DE TRANSMUTACION
-Transmutation GateOfTruth() -> void {
-    Solid power = 100
-    Inscription name = "Edward Elric"
-    
-    Transmute("Poder: ")
-    Transmute(power)
-    Transmute("Alquimista: ")
-    Transmute(name)
-    
-    Observe (power > 50) {
-        Transmute("Transmutacion exitosa")
-    }
-}"""
-        
-        self.code_editor.insert('1.0', initial_code)
-        
         # Agregar el editor_frame al PanedWindow del padre
         parent.add(editor_frame, minsize=300)
         
@@ -346,9 +328,6 @@ Transmutation GateOfTruth() -> void {
             bd=0
         )
         self.program_output.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
-        # Mostrar informacion de bienvenida
-        self.show_welcome_info()
         
         # Agregar el output_frame al PanedWindow
         parent.add(output_frame, minsize=200)
@@ -496,44 +475,30 @@ Transmutation GateOfTruth() -> void {
             # Compilar usando AlchemistCompiler
             compiler = AlchemistCompiler()
             
-            # Realizar compilación (sin ejecutar)
-            self.info_output.insert('1.0', "COMPILACION INICIADA...\n")
-            self.info_output.insert(tk.END, "="*50 + "\n\n")
-            
             # Análisis Léxico
-            self.info_output.insert(tk.END, "Analisis Lexico... ")
             lexer = AlchemistLexer()
             tokens = lexer.tokenize(code)
-            self.info_output.insert(tk.END, f"OK ({len(tokens)} tokens)\n")
             
             # Análisis Sintáctico
-            self.info_output.insert(tk.END, "Analisis Sintactico... ")
             parser = AlchemistParser()
             ast = parser.parse(code)
-            self.info_output.insert(tk.END, f"OK ({len(ast.functions)} funciones)\n")
             
             # Análisis Semántico
-            self.info_output.insert(tk.END, "Analisis Semantico... ")
             from src.semantic_analyzer import AlchemistSemanticAnalyzer
             semantic = AlchemistSemanticAnalyzer()
             semantic.analyze(ast)
-            self.info_output.insert(tk.END, "OK\n")
             
             # Generación de Código
-            self.info_output.insert(tk.END, "Generacion de Codigo... ")
             from src.code_generator import AlchemistCodeGenerator
             codegen = AlchemistCodeGenerator()
             bytecode = codegen.generate(ast)
-            self.info_output.insert(tk.END, f"OK ({len(bytecode)} instrucciones)\n\n")
             
-            self.info_output.insert(tk.END, "="*50 + "\n")
-            self.info_output.insert(tk.END, "COMPILACION EXITOSA\n\n")
-            
-            # Mostrar información adicional
+            # Mostrar información de compilación
+            self.info_output.insert('1.0', "Compilacion exitosa\n\n")
             self.info_output.insert(tk.END, "Estadisticas:\n")
-            self.info_output.insert(tk.END, f"   - Tokens: {len(tokens)}\n")
-            self.info_output.insert(tk.END, f"   - Funciones: {len(ast.functions)}\n")
-            self.info_output.insert(tk.END, f"   - Instrucciones de bytecode: {len(bytecode)}\n")
+            self.info_output.insert(tk.END, f"   Tokens: {len(tokens)}\n")
+            self.info_output.insert(tk.END, f"   Funciones: {len(ast.functions)}\n")
+            self.info_output.insert(tk.END, f"   Instrucciones: {len(bytecode)}\n")
             
             # Guardar bytecode y metadatos para ejecución posterior
             self.compiled_bytecode = bytecode
@@ -622,12 +587,7 @@ Transmutation GateOfTruth() -> void {
             compiler = AlchemistCompiler()
             compiler.set_verbose(False)  # Desactivar mensajes verbosos
             
-            # Mostrar proceso en la tab de compilación
-            self.info_output.insert('1.0', "COMPILANDO Y EJECUTANDO...\n")
-            self.info_output.insert(tk.END, "="*50 + "\n\n")
-            
-            # Fase 1: Compilar
-            self.info_output.insert(tk.END, "Compilando... ")
+            # Compilar
             compilation_result = compiler.compile(code)
             
             if not compilation_result.success:
@@ -639,12 +599,10 @@ Transmutation GateOfTruth() -> void {
                 self.notebook.select(0)
                 return
             
-            self.info_output.insert(tk.END, "OK\n")
+            # Mostrar info de compilación
+            self.info_output.insert('1.0', "Compilacion exitosa\n")
             
-            # Fase 2: Ejecutar
-            self.info_output.insert(tk.END, "Ejecutando... ")
-            
-            # Capturar salida del programa
+            # Ejecutar
             from src.interpreter import AlchemistInterpreter
             interpreter = AlchemistInterpreter()
             interpreter.load_program(
@@ -655,21 +613,12 @@ Transmutation GateOfTruth() -> void {
             
             output_lines = interpreter.execute()
             
-            self.info_output.insert(tk.END, "OK\n\n")
-            self.info_output.insert(tk.END, "Compilacion y ejecucion exitosa\n")
-            
             # Mostrar salida del programa
-            self.program_output.insert('1.0', "SALIDA DEL PROGRAMA:\n")
-            self.program_output.insert(tk.END, "="*50 + "\n\n")
-            
             if output_lines:
                 for line in output_lines:
                     self.program_output.insert(tk.END, line + "\n")
             else:
                 self.program_output.insert(tk.END, "(sin salida)\n")
-            
-            self.program_output.insert(tk.END, "\n" + "="*50 + "\n")
-            self.program_output.insert(tk.END, "EJECUCION COMPLETADA\n")
             
             # Cambiar a tab de salida del programa
             self.notebook.select(2)
@@ -1310,7 +1259,6 @@ Transmutation calcularPoder(Solid edad) -> Solid {
 
 def main():
     """Funcion principal"""
-    print("Iniciando Alchemist IDE Minimalista...")
     ide = AlchemistIDE()
     ide.run()
 
