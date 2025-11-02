@@ -27,7 +27,8 @@ class TokenType(Enum):
     INSCRIPTION_TYPE = "INSCRIPTION_TYPE"
     PRINCIPLE_TYPE = "PRINCIPLE_TYPE"
     VOID = "VOID"
-    ALCHEMICARRAY = "ALCHEMICARRAY"  # Para arrays
+    ALCHEMICARRAY = "ALCHEMICARRAY"  # Para arrays (tipo compuesto 1)
+    ALCHEMICMATRIX = "ALCHEMICMATRIX"  # Para matrices (tipo compuesto 2)
     
     #  control de flujo (nueva sintaxis alquimica)
     OBSERVE = "OBSERVE"
@@ -131,7 +132,8 @@ class AlchemistLexer:
             'Inscription': TokenType.INSCRIPTION_TYPE,
             'Principle': TokenType.PRINCIPLE_TYPE,
             'void': TokenType.VOID,
-            'AlchemicArray': TokenType.ALCHEMICARRAY,  # Para declarar arrays
+            'AlchemicArray': TokenType.ALCHEMICARRAY,  # Para declarar arrays (tipo compuesto 1)
+            'AlchemicMatrix': TokenType.ALCHEMICMATRIX,  # Para declarar matrices (tipo compuesto 2)
             
             # control de flujo alquimico
             'Observe': TokenType.OBSERVE,

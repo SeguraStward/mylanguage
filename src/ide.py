@@ -1103,6 +1103,51 @@ Transmutation calcularPoder(Solid edad) -> Solid {
     Solid suma = numeros[0] + numeros[1]
     Transmute("Suma:")
     Transmute(suma)
+}''',
+            "Matrices Alquimicas": '''Transmutation GateOfTruth() -> void {
+    // Declarar matriz 3x3
+    AlchemicMatrix[Solid, 3, 3] matriz
+
+    // Asignar valores
+    matriz[0][0] = 1
+    matriz[0][1] = 2
+    matriz[0][2] = 3
+    matriz[1][0] = 4
+    matriz[1][1] = 5
+    matriz[1][2] = 6
+    matriz[2][0] = 7
+    matriz[2][1] = 8
+    matriz[2][2] = 9
+
+    // Mostrar matriz
+    Transmute("Matriz 3x3:")
+    Transmute(matriz[0][0])
+    Transmute(matriz[0][1])
+    Transmute(matriz[0][2])
+    Transmute(matriz[1][0])
+    Transmute(matriz[1][1])
+    Transmute(matriz[1][2])
+
+    // Modificar elemento
+    matriz[1][1] = 100
+    Transmute("Elemento [1][1] modificado:")
+    Transmute(matriz[1][1])
+
+    // Matriz de flotantes 2x2
+    AlchemicMatrix[Liquid, 2, 2] temps
+    temps[0][0] = 25.5
+    temps[0][1] = 30.2
+    temps[1][0] = 28.7
+    temps[1][1] = 32.1
+
+    Transmute("Temperaturas:")
+    Transmute(temps[0][0])
+    Transmute(temps[1][1])
+
+    // Operaciones
+    Solid suma = matriz[0][0] + matriz[1][1]
+    Transmute("Suma diagonal:")
+    Transmute(suma)
 }'''
         }
 

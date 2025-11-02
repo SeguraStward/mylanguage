@@ -120,6 +120,26 @@ class ArrayAssignment(Statement):
 
 
 @dataclass
+class MatrixDeclaration(Statement):
+    """Declaracion de matriz: AlchemicMatrix[Solid, 3, 4] matriz"""
+    name: str
+    element_type: str
+    rows: int
+    cols: int
+    line: int
+
+
+@dataclass
+class MatrixAssignment(Statement):
+    """Asignacion a elemento de matriz: matriz[1][2] = 10"""
+    name: str
+    row_index: Expression
+    col_index: Expression
+    value: Expression
+    line: int
+
+
+@dataclass
 class WhileStatement(Statement):
     """Ciclo while"""
     condition: Expression
@@ -202,6 +222,15 @@ class ArrayAccess(Expression):
     """Acceso a elemento de array: numeros[0]"""
     name: str
     index: Expression
+    line: int
+
+
+@dataclass
+class MatrixAccess(Expression):
+    """Acceso a elemento de matriz: matriz[1][2]"""
+    name: str
+    row_index: Expression
+    col_index: Expression
     line: int
 
 
@@ -411,9 +440,17 @@ class AlchemistParser:
         if self._match(TokenType.ALCHEMICARRAY):
             return self._parse_array_declaration()
         
+        # Verificar declaracion de matriz
+        if self._match(TokenType.ALCHEMICMATRIX):
+            return self._parse_matrix_declaration()
+        
         # Verificar declaracion de variable o asignacion
         if self._check_variable_declaration():
             return self._parse_variable_declaration()
+        
+        # Verificar asignación a matriz: nombre[fila][col] = valor
+        if self._check_matrix_assignment():
+            return self._parse_matrix_assignment()
         
         # Verificar asignación a array: nombre[indice] = valor
         if self._check_array_assignment():
@@ -531,6 +568,110 @@ class AlchemistParser:
         value = self._parse_expression()
         
         return ArrayAssignment(name, index, value, line)
+    
+    def _check_matrix_assignment(self) -> bool:
+        """Verifica si es asignacion a matriz: nombre[fila][col] = valor"""
+        if self.current + 3 < len(self.tokens):
+            return (self._check(TokenType.IDENTIFIER) and 
+                   self.tokens[self.current + 1].type == TokenType.LBRACKET and
+                   self._has_double_bracket())
+        return False
+    
+    def _has_double_bracket(self) -> bool:
+        """Verifica si hay doble corchete [x][y]"""
+        bracket_count = 0
+        i = self.current + 1
+        while i < len(self.tokens) and bracket_count < 2:
+            if self.tokens[i].type == TokenType.LBRACKET:
+                bracket_count += 1
+            elif self.tokens[i].type == TokenType.RBRACKET:
+                # Verificar si hay otro [ después del ]
+                if bracket_count == 1 and i + 1 < len(self.tokens):
+                    if self.tokens[i + 1].type == TokenType.LBRACKET:
+                        return True
+                    return False
+            i += 1
+        return False
+    
+    def _parse_matrix_declaration(self) -> 'MatrixDeclaration':
+        """Analiza declaracion de matriz: AlchemicMatrix[Solid, 3, 4] matriz"""
+        line = self._previous().line
+        
+        # Esperar [
+        self._consume(TokenType.LBRACKET, "Se esperaba '[' despues de 'AlchemicMatrix'")
+        
+        # Tipo de elementos
+        type_token = self._advance()
+        if type_token.type not in [TokenType.SOLID_TYPE, TokenType.LIQUID_TYPE, 
+                                    TokenType.INSCRIPTION_TYPE, TokenType.PRINCIPLE_TYPE]:
+            raise ParseError(f"Tipo de elemento invalido para matriz: {type_token.value}", 
+                           type_token.line, type_token.column)
+        element_type = type_token.value
+        
+        # Esperar ,
+        self._consume(TokenType.COMMA, "Se esperaba ',' despues del tipo de elemento")
+        
+        # Número de filas
+        rows_token = self._consume(TokenType.INTEGER, "Se esperaba numero de filas (numero entero)")
+        rows = int(rows_token.value)
+        
+        if rows <= 0:
+            raise ParseError(f"El numero de filas debe ser mayor a 0", 
+                           rows_token.line, rows_token.column)
+        
+        # Esperar ,
+        self._consume(TokenType.COMMA, "Se esperaba ',' despues del numero de filas")
+        
+        # Número de columnas
+        cols_token = self._consume(TokenType.INTEGER, "Se esperaba numero de columnas (numero entero)")
+        cols = int(cols_token.value)
+        
+        if cols <= 0:
+            raise ParseError(f"El numero de columnas debe ser mayor a 0", 
+                           cols_token.line, cols_token.column)
+        
+        # Esperar ]
+        self._consume(TokenType.RBRACKET, "Se esperaba ']' despues del numero de columnas")
+        
+        # Nombre de la matriz
+        name_token = self._consume(TokenType.IDENTIFIER, "Se esperaba nombre de la matriz")
+        name = name_token.value
+        
+        return MatrixDeclaration(name, element_type, rows, cols, line)
+    
+    def _parse_matrix_assignment(self) -> 'MatrixAssignment':
+        """Analiza asignacion a matriz: matriz[1][2] = 10"""
+        line = self._peek().line
+        
+        # Nombre de la matriz
+        name_token = self._consume(TokenType.IDENTIFIER, "Se esperaba nombre de la matriz")
+        name = name_token.value
+        
+        # [
+        self._consume(TokenType.LBRACKET, "Se esperaba '['")
+        
+        # Índice de fila
+        row_index = self._parse_expression()
+        
+        # ]
+        self._consume(TokenType.RBRACKET, "Se esperaba ']'")
+        
+        # [
+        self._consume(TokenType.LBRACKET, "Se esperaba segundo '['")
+        
+        # Índice de columna
+        col_index = self._parse_expression()
+        
+        # ]
+        self._consume(TokenType.RBRACKET, "Se esperaba segundo ']'")
+        
+        # =
+        self._consume(TokenType.ASSIGN, "Se esperaba '='")
+        
+        # Valor
+        value = self._parse_expression()
+        
+        return MatrixAssignment(name, row_index, col_index, value, line)
     
     def _parse_observe_statement(self) -> ObserveStatement:
         """Analiza una declaracion Observe"""
@@ -717,17 +858,25 @@ class AlchemistParser:
         return self._parse_call()
     
     def _parse_call(self) -> Expression:
-        """Analiza llamadas a funcion y acceso a arrays"""
+        """Analiza llamadas a funcion y acceso a arrays/matrices"""
         expr = self._parse_primary()
         
-        # Acceso a array: nombre[indice]
+        # Acceso a array/matriz: nombre[indice] o nombre[fila][col]
         if self._match(TokenType.LBRACKET):
             if isinstance(expr, Variable):
-                index = self._parse_expression()
+                first_index = self._parse_expression()
                 self._consume(TokenType.RBRACKET, "Se esperaba ']' despues del indice")
-                return ArrayAccess(expr.name, index, expr.line)
+                
+                # Verificar si es matriz (doble corchete)
+                if self._match(TokenType.LBRACKET):
+                    second_index = self._parse_expression()
+                    self._consume(TokenType.RBRACKET, "Se esperaba ']' despues del segundo indice")
+                    return MatrixAccess(expr.name, first_index, second_index, expr.line)
+                else:
+                    # Es acceso a array simple
+                    return ArrayAccess(expr.name, first_index, expr.line)
             else:
-                raise ParseError("Solo se puede acceder a arrays con []", 
+                raise ParseError("Solo se puede acceder a arrays/matrices con []", 
                                self._previous().line, self._previous().column)
         
         # Llamada a función: nombre(args)

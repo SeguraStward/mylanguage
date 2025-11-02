@@ -207,6 +207,10 @@ class AlchemistInterpreter:
             self._exec_store_array(instruction)
         elif instruction.op == "LOAD_ARRAY":
             self._exec_load_array(instruction)
+        elif instruction.op == "STORE_MATRIX":
+            self._exec_store_matrix(instruction)
+        elif instruction.op == "LOAD_MATRIX":
+            self._exec_load_matrix(instruction)
         elif instruction.op == "LABEL":
             # Las etiquetas no hacen nada en tiempo de ejecución
             self.instruction_pointer += 1
@@ -332,6 +336,99 @@ class AlchemistInterpreter:
         value = self.memory[target_addr]
         if value is None:
             raise RuntimeError(f"Elemento del array no inicializado en índice {index}")
+        
+        self.stack.append(value)
+        self.instruction_pointer += 1
+    
+    def _exec_store_matrix(self, instruction: Instruction) -> None:
+        """Almacena un valor en un elemento de la matriz"""
+        # La pila contiene: [índice_fila, índice_col, valor]
+        if len(self.stack) < 3:
+            raise RuntimeError("Pila insuficiente para operación STORE_MATRIX")
+        
+        value = self.stack.pop()  # Valor a almacenar
+        col_index = self.stack.pop()  # Índice de columna
+        row_index = self.stack.pop()  # Índice de fila
+        base_addr = instruction.arg1  # Dirección base de la matriz
+        matrix_rows, matrix_cols = instruction.arg2  # (filas, columnas) como tupla
+        matrix_name = instruction.arg3  # Nombre de la matriz (para mensajes de error)
+        
+        # Validar que los índices sean enteros
+        if not isinstance(row_index, int):
+            raise RuntimeError(f"El índice de fila debe ser un entero, se obtuvo: {type(row_index).__name__}")
+        
+        if not isinstance(col_index, int):
+            raise RuntimeError(f"El índice de columna debe ser un entero, se obtuvo: {type(col_index).__name__}")
+        
+        # VALIDACION DE RANGO para filas
+        if row_index < 0:
+            raise RuntimeError(f"Índice de fila negativo: {row_index}. Los índices deben ser >= 0")
+        
+        if row_index >= matrix_rows:
+            raise RuntimeError(f"Índice de fila fuera de rango: {row_index}. La matriz '{matrix_name}' tiene {matrix_rows} filas (índices válidos: 0-{matrix_rows - 1})")
+        
+        # VALIDACION DE RANGO para columnas
+        if col_index < 0:
+            raise RuntimeError(f"Índice de columna negativo: {col_index}. Los índices deben ser >= 0")
+        
+        if col_index >= matrix_cols:
+            raise RuntimeError(f"Índice de columna fuera de rango: {col_index}. La matriz '{matrix_name}' tiene {matrix_cols} columnas (índices válidos: 0-{matrix_cols - 1})")
+        
+        # Calcular dirección efectiva (row-major order: dirección = base + fila * cols + col)
+        target_addr = base_addr + (row_index * matrix_cols) + col_index
+        
+        # Validar dirección
+        if target_addr >= len(self.memory):
+            raise RuntimeError(f"Dirección de memoria inválida: {target_addr}")
+        
+        # Almacenar valor
+        self.memory[target_addr] = value
+        self.instruction_pointer += 1
+    
+    def _exec_load_matrix(self, instruction: Instruction) -> None:
+        """Carga un valor desde un elemento de la matriz"""
+        # La pila contiene: [índice_fila, índice_col]
+        if len(self.stack) < 2:
+            raise RuntimeError("Pila insuficiente para operación LOAD_MATRIX")
+        
+        col_index = self.stack.pop()  # Índice de columna
+        row_index = self.stack.pop()  # Índice de fila
+        base_addr = instruction.arg1  # Dirección base de la matriz
+        matrix_rows, matrix_cols = instruction.arg2  # (filas, columnas) como tupla
+        matrix_name = instruction.arg3  # Nombre de la matriz (para mensajes de error)
+        
+        # Validar que los índices sean enteros
+        if not isinstance(row_index, int):
+            raise RuntimeError(f"El índice de fila debe ser un entero, se obtuvo: {type(row_index).__name__}")
+        
+        if not isinstance(col_index, int):
+            raise RuntimeError(f"El índice de columna debe ser un entero, se obtuvo: {type(col_index).__name__}")
+        
+        # VALIDACION DE RANGO para filas
+        if row_index < 0:
+            raise RuntimeError(f"Índice de fila negativo: {row_index}. Los índices deben ser >= 0")
+        
+        if row_index >= matrix_rows:
+            raise RuntimeError(f"Índice de fila fuera de rango: {row_index}. La matriz '{matrix_name}' tiene {matrix_rows} filas (índices válidos: 0-{matrix_rows - 1})")
+        
+        # VALIDACION DE RANGO para columnas
+        if col_index < 0:
+            raise RuntimeError(f"Índice de columna negativo: {col_index}. Los índices deben ser >= 0")
+        
+        if col_index >= matrix_cols:
+            raise RuntimeError(f"Índice de columna fuera de rango: {col_index}. La matriz '{matrix_name}' tiene {matrix_cols} columnas (índices válidos: 0-{matrix_cols - 1})")
+        
+        # Calcular dirección efectiva (row-major order)
+        target_addr = base_addr + (row_index * matrix_cols) + col_index
+        
+        # Validar dirección
+        if target_addr >= len(self.memory):
+            raise RuntimeError(f"Dirección de memoria inválida: {target_addr}")
+        
+        # Cargar valor
+        value = self.memory[target_addr]
+        if value is None:
+            raise RuntimeError(f"Elemento de la matriz no inicializado en posición [{row_index}][{col_index}]")
         
         self.stack.append(value)
         self.instruction_pointer += 1

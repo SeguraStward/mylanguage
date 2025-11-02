@@ -13,7 +13,8 @@ from .parser import (
     VariableDeclaration, Assignment, ObserveStatement, WhileStatement, 
     ForStatement, ReturnStatement, BreakStatement, ContinueStatement,
     ExpressionStatement, BinaryOperation, UnaryOperation, FunctionCall,
-    Variable, Literal, AlternativelyPart, ArrayDeclaration, ArrayAssignment, ArrayAccess
+    Variable, Literal, AlternativelyPart, ArrayDeclaration, ArrayAssignment, ArrayAccess,
+    MatrixDeclaration, MatrixAssignment, MatrixAccess
 )
 
 
@@ -47,6 +48,7 @@ class AlchemistCodeGenerator:
         self.variables: Dict[str, int] = {}  # nombre -> dirección
         self.functions: Dict[str, int] = {}  # nombre -> dirección
         self.arrays: Dict[str, Dict[str, Any]] = {}  # nombre -> {base_addr, size, element_type}
+        self.matrices: Dict[str, Dict[str, Any]] = {}  # nombre -> {base_addr, rows, cols, element_type}
         self.memory_counter = 0
         self.label_counter = 0
         self.current_function: Optional[str] = None
@@ -136,6 +138,10 @@ class AlchemistCodeGenerator:
             self._generate_array_declaration(stmt)
         elif isinstance(stmt, ArrayAssignment):
             self._generate_array_assignment(stmt)
+        elif isinstance(stmt, MatrixDeclaration):
+            self._generate_matrix_declaration(stmt)
+        elif isinstance(stmt, MatrixAssignment):
+            self._generate_matrix_assignment(stmt)
         elif isinstance(stmt, ObserveStatement):
             self._generate_observe_statement(stmt)
         elif isinstance(stmt, WhileStatement):
@@ -235,6 +241,77 @@ class AlchemistCodeGenerator:
         # Cargar valor desde array[index]
         # El intérprete necesita: índice en stack, dirección base, tamaño
         self.instructions.append(Instruction("LOAD_ARRAY", base_addr, array_size, expr.name))
+    
+    def _generate_matrix_declaration(self, stmt: MatrixDeclaration) -> None:
+        """Genera código para declaración de matriz"""
+        # Asignar dirección base para la matriz
+        base_addr = self._allocate_variable(stmt.name)
+        
+        # Guardar metadatos de la matriz
+        self.matrices[stmt.name] = {
+            'base_addr': base_addr,
+            'rows': stmt.rows,
+            'cols': stmt.cols,
+            'element_type': stmt.element_type
+        }
+        
+        # Calcular tamaño total de la matriz
+        total_size = stmt.rows * stmt.cols
+        
+        # Reservar espacio para todos los elementos de la matriz
+        for i in range(1, total_size):
+            self._allocate_variable(f"{stmt.name}_elem_{i}")
+        
+        # Inicializar todos los elementos con valor por defecto
+        default_value = self._get_default_value(stmt.element_type)
+        for i in range(total_size):
+            self.instructions.append(Instruction("LOAD_CONST", default_value))
+            self.instructions.append(Instruction("STORE", base_addr + i))
+    
+    def _generate_matrix_assignment(self, stmt: MatrixAssignment) -> None:
+        """Genera código para asignación a elemento de matriz"""
+        if stmt.name not in self.matrices:
+            raise Exception(f"Matriz '{stmt.name}' no declarada")
+        
+        matrix_info = self.matrices[stmt.name]
+        base_addr = matrix_info['base_addr']
+        matrix_rows = matrix_info['rows']
+        matrix_cols = matrix_info['cols']
+        
+        # Evaluar el índice de fila
+        self._generate_expression(stmt.row_index)
+        
+        # Evaluar el índice de columna
+        self._generate_expression(stmt.col_index)
+        
+        # Evaluar el valor a asignar
+        self._generate_expression(stmt.value)
+        
+        # Almacenar en matriz[fila][col]
+        # El intérprete necesita: índice_fila, índice_col, valor en stack
+        # arg1=base_addr, arg2=(rows, cols), arg3=name
+        self.instructions.append(Instruction("STORE_MATRIX", base_addr, (matrix_rows, matrix_cols), stmt.name))
+    
+    def _generate_matrix_access(self, expr: MatrixAccess) -> None:
+        """Genera código para acceso a elemento de matriz"""
+        if expr.name not in self.matrices:
+            raise Exception(f"Matriz '{expr.name}' no declarada")
+        
+        matrix_info = self.matrices[expr.name]
+        base_addr = matrix_info['base_addr']
+        matrix_rows = matrix_info['rows']
+        matrix_cols = matrix_info['cols']
+        
+        # Evaluar el índice de fila
+        self._generate_expression(expr.row_index)
+        
+        # Evaluar el índice de columna
+        self._generate_expression(expr.col_index)
+        
+        # Cargar valor desde matriz[fila][col]
+        # El intérprete necesita: índice_fila, índice_col en stack
+        # arg1=base_addr, arg2=(rows, cols), arg3=name
+        self.instructions.append(Instruction("LOAD_MATRIX", base_addr, (matrix_rows, matrix_cols), expr.name))
     
     def _generate_observe_statement(self, stmt: ObserveStatement) -> None:
         """Genera código para declaración observe"""
@@ -405,6 +482,9 @@ class AlchemistCodeGenerator:
         
         elif isinstance(expr, ArrayAccess):
             self._generate_array_access(expr)
+        
+        elif isinstance(expr, MatrixAccess):
+            self._generate_matrix_access(expr)
     
     def _generate_binary_operation(self, expr: BinaryOperation) -> None:
         """Genera código para operación binaria"""

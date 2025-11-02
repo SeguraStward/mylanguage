@@ -13,7 +13,8 @@ from .parser import (
     VariableDeclaration, Assignment, ObserveStatement, WhileStatement, 
     ForStatement, ReturnStatement, BreakStatement, ContinueStatement,
     ExpressionStatement, BinaryOperation, UnaryOperation, FunctionCall,
-    Variable, Literal, AlternativelyPart, ArrayDeclaration, ArrayAssignment, ArrayAccess
+    Variable, Literal, AlternativelyPart, ArrayDeclaration, ArrayAssignment, ArrayAccess,
+    MatrixDeclaration, MatrixAssignment, MatrixAccess
 )
 
 
@@ -29,6 +30,10 @@ class Symbol:
     is_array: bool = False  # True si es un array
     array_element_type: Optional[str] = None  # Tipo de elementos del array
     array_size: Optional[int] = None  # Tamaño del array
+    is_matrix: bool = False  # True si es una matriz
+    matrix_element_type: Optional[str] = None  # Tipo de elementos de la matriz
+    matrix_rows: Optional[int] = None  # Número de filas de la matriz
+    matrix_cols: Optional[int] = None  # Número de columnas de la matriz
     line: int = 0
 
 
@@ -285,10 +290,14 @@ class AlchemistSemanticAnalyzer:
             self._analizar_declaracion_variable(declaracion)
         elif isinstance(declaracion, ArrayDeclaration):
             self._analizar_declaracion_array(declaracion)
+        elif isinstance(declaracion, MatrixDeclaration):
+            self._analizar_declaracion_matriz(declaracion)
         elif isinstance(declaracion, Assignment):
             self._analizar_asignacion(declaracion)
         elif isinstance(declaracion, ArrayAssignment):
             self._analizar_asignacion_array(declaracion)
+        elif isinstance(declaracion, MatrixAssignment):
+            self._analizar_asignacion_matriz(declaracion)
         elif isinstance(declaracion, ObserveStatement):
             self._analizar_observe(declaracion)
         elif isinstance(declaracion, WhileStatement):
@@ -468,6 +477,183 @@ class AlchemistSemanticAnalyzer:
         # el tipo del acceso es el tipo de los elementos del array
         return simbolo_array.array_element_type
     
+    def _analizar_declaracion_matriz(self, declaracion_matriz: MatrixDeclaration) -> None:
+        """analiza declaracion de matriz: AlchemicMatrix[Solid, 3, 4] matriz"""
+        # verificar que el tipo de elemento sea valido
+        tipos_validos = ["Solid", "Liquid", "Inscription", "Principle"]
+        if declaracion_matriz.element_type not in tipos_validos:
+            self.errors.append(SemanticError(
+                f"El tipo de elemento '{declaracion_matriz.element_type}' no es valido para matrices", 
+                declaracion_matriz.line
+            ))
+            return
+        
+        # verificar que las dimensiones sean positivas
+        if declaracion_matriz.rows <= 0:
+            self.errors.append(SemanticError(
+                f"El numero de filas debe ser mayor a 0", 
+                declaracion_matriz.line
+            ))
+            return
+        
+        if declaracion_matriz.cols <= 0:
+            self.errors.append(SemanticError(
+                f"El numero de columnas debe ser mayor a 0", 
+                declaracion_matriz.line
+            ))
+            return
+        
+        # crear simbolo para la matriz
+        simbolo_matriz = Symbol(
+            name=declaracion_matriz.name,
+            type="matrix",  # Tipo general "matrix"
+            is_matrix=True,
+            matrix_element_type=declaracion_matriz.element_type,
+            matrix_rows=declaracion_matriz.rows,
+            matrix_cols=declaracion_matriz.cols,
+            line=declaracion_matriz.line
+        )
+        
+        try:
+            self.current_table.declare(simbolo_matriz)
+        except SemanticError as error:
+            self.errors.append(error)
+    
+    def _analizar_asignacion_matriz(self, asignacion: MatrixAssignment) -> None:
+        """analiza asignacion a elemento de matriz: matriz[1][2] = 10"""
+        # verificar que la matriz existe
+        simbolo_matriz = self.current_table.lookup(asignacion.name)
+        if not simbolo_matriz:
+            self.errors.append(SemanticError(
+                f"La matriz '{asignacion.name}' no ha sido declarada", 
+                asignacion.line
+            ))
+            return
+        
+        # verificar que es realmente una matriz
+        if not simbolo_matriz.is_matrix:
+            self.errors.append(SemanticError(
+                f"'{asignacion.name}' no es una matriz, no se puede usar [][]", 
+                asignacion.line
+            ))
+            return
+        
+        # verificar que los indices sean de tipo Solid (entero)
+        tipo_indice_fila = self._analizar_expresion(asignacion.row_index)
+        if tipo_indice_fila and tipo_indice_fila not in ["Solid", "int"]:
+            self.errors.append(SemanticError(
+                f"El indice de fila debe ser Solid (entero), no '{tipo_indice_fila}'", 
+                asignacion.line
+            ))
+        
+        tipo_indice_col = self._analizar_expresion(asignacion.col_index)
+        if tipo_indice_col and tipo_indice_col not in ["Solid", "int"]:
+            self.errors.append(SemanticError(
+                f"El indice de columna debe ser Solid (entero), no '{tipo_indice_col}'", 
+                asignacion.line
+            ))
+        
+        # VALIDACION DE RANGO: si los indices son constantes, verificar que esten en rango
+        from .parser import Literal
+        if isinstance(asignacion.row_index, Literal) and isinstance(asignacion.row_index.value, int):
+            indice_fila = asignacion.row_index.value
+            if indice_fila < 0:
+                self.errors.append(SemanticError(
+                    f"Indice de fila negativo: {indice_fila}. Los indices deben ser >= 0", 
+                    asignacion.line
+                ))
+            elif indice_fila >= simbolo_matriz.matrix_rows:
+                self.errors.append(SemanticError(
+                    f"Indice de fila fuera de rango: {indice_fila}. La matriz '{asignacion.name}' tiene {simbolo_matriz.matrix_rows} filas (indices validos: 0-{simbolo_matriz.matrix_rows - 1})", 
+                    asignacion.line
+                ))
+        
+        if isinstance(asignacion.col_index, Literal) and isinstance(asignacion.col_index.value, int):
+            indice_col = asignacion.col_index.value
+            if indice_col < 0:
+                self.errors.append(SemanticError(
+                    f"Indice de columna negativo: {indice_col}. Los indices deben ser >= 0", 
+                    asignacion.line
+                ))
+            elif indice_col >= simbolo_matriz.matrix_cols:
+                self.errors.append(SemanticError(
+                    f"Indice de columna fuera de rango: {indice_col}. La matriz '{asignacion.name}' tiene {simbolo_matriz.matrix_cols} columnas (indices validos: 0-{simbolo_matriz.matrix_cols - 1})", 
+                    asignacion.line
+                ))
+        
+        # verificar que el valor asignado sea del mismo tipo que los elementos de la matriz
+        tipo_valor = self._analizar_expresion(asignacion.value)
+        if tipo_valor and not self._tipos_compatibles(simbolo_matriz.matrix_element_type, tipo_valor):
+            self.errors.append(SemanticError(
+                f"No puedes asignar '{tipo_valor}' a una matriz de '{simbolo_matriz.matrix_element_type}'", 
+                asignacion.line
+            ))
+    
+    def _analizar_acceso_matriz(self, acceso: MatrixAccess) -> Optional[str]:
+        """analiza acceso a elemento de matriz: matriz[1][2]"""
+        # verificar que la matriz existe
+        simbolo_matriz = self.current_table.lookup(acceso.name)
+        if not simbolo_matriz:
+            self.errors.append(SemanticError(
+                f"La matriz '{acceso.name}' no ha sido declarada", 
+                acceso.line
+            ))
+            return None
+        
+        # verificar que es realmente una matriz
+        if not simbolo_matriz.is_matrix:
+            self.errors.append(SemanticError(
+                f"'{acceso.name}' no es una matriz, no se puede usar [][]", 
+                acceso.line
+            ))
+            return None
+        
+        # verificar que los indices sean de tipo Solid (entero)
+        tipo_indice_fila = self._analizar_expresion(acceso.row_index)
+        if tipo_indice_fila and tipo_indice_fila not in ["Solid", "int"]:
+            self.errors.append(SemanticError(
+                f"El indice de fila debe ser Solid (entero), no '{tipo_indice_fila}'", 
+                acceso.line
+            ))
+        
+        tipo_indice_col = self._analizar_expresion(acceso.col_index)
+        if tipo_indice_col and tipo_indice_col not in ["Solid", "int"]:
+            self.errors.append(SemanticError(
+                f"El indice de columna debe ser Solid (entero), no '{tipo_indice_col}'", 
+                acceso.line
+            ))
+        
+        # VALIDACION DE RANGO: si los indices son constantes, verificar que esten en rango
+        from .parser import Literal
+        if isinstance(acceso.row_index, Literal) and isinstance(acceso.row_index.value, int):
+            indice_fila = acceso.row_index.value
+            if indice_fila < 0:
+                self.errors.append(SemanticError(
+                    f"Indice de fila negativo: {indice_fila}. Los indices deben ser >= 0", 
+                    acceso.line
+                ))
+            elif indice_fila >= simbolo_matriz.matrix_rows:
+                self.errors.append(SemanticError(
+                    f"Indice de fila fuera de rango: {indice_fila}. La matriz '{acceso.name}' tiene {simbolo_matriz.matrix_rows} filas (indices validos: 0-{simbolo_matriz.matrix_rows - 1})", 
+                    acceso.line
+                ))
+        
+        if isinstance(acceso.col_index, Literal) and isinstance(acceso.col_index.value, int):
+            indice_col = acceso.col_index.value
+            if indice_col < 0:
+                self.errors.append(SemanticError(
+                    f"Indice de columna negativo: {indice_col}. Los indices deben ser >= 0", 
+                    acceso.line
+                ))
+            elif indice_col >= simbolo_matriz.matrix_cols:
+                self.errors.append(SemanticError(
+                    f"Indice de columna fuera de rango: {indice_col}. La matriz '{acceso.name}' tiene {simbolo_matriz.matrix_cols} columnas (indices validos: 0-{simbolo_matriz.matrix_cols - 1})", 
+                    acceso.line
+                ))
+        
+        # el tipo del acceso es el tipo de los elementos de la matriz
+        return simbolo_matriz.matrix_element_type
+    
     def _analizar_asignacion(self, asignacion: Assignment) -> None:
         """analiza cuando asignamos un valor a una variable existente"""
         # verificar que la variable ya existe
@@ -499,9 +685,9 @@ class AlchemistSemanticAnalyzer:
         """analiza una declaracion observe con sus alternatively e inevitably"""
         # la condicion del observe debe ser booleana, sino no tiene sentido
         tipo_condicion = self._analizar_expresion(declaracion_observe.condition)
-        if tipo_condicion and tipo_condicion != "bool":
+        if tipo_condicion and tipo_condicion not in ["bool", "Principle"]:
             self.errors.append(SemanticError(
-                "La condicion del 'observe' tiene que ser true o false (bool)",
+                "La condicion del 'observe' tiene que ser true o false (bool/Principle)",
                 declaracion_observe.line
             ))
         
@@ -512,9 +698,9 @@ class AlchemistSemanticAnalyzer:
         # analizamos todos los alternatively si los hay
         for parte_alt in declaracion_observe.alternatively_parts:
             tipo_condicion_alt = self._analizar_expresion(parte_alt.condition)
-            if tipo_condicion_alt and tipo_condicion_alt != "bool":
+            if tipo_condicion_alt and tipo_condicion_alt not in ["bool", "Principle"]:
                 self.errors.append(SemanticError(
-                    "La condicion del 'alternatively' tambien tiene que ser bool",
+                    "La condicion del 'alternatively' tambien tiene que ser bool/Principle",
                     declaracion_observe.line
                 ))
             for declaracion in parte_alt.body:
@@ -529,9 +715,9 @@ class AlchemistSemanticAnalyzer:
         """analiza un ciclo while"""
         # la condicion debe ser booleana
         tipo_condicion = self._analizar_expresion(declaracion_while.condition)
-        if tipo_condicion and tipo_condicion != "bool":
+        if tipo_condicion and tipo_condicion not in ["bool", "Principle"]:
             self.errors.append(SemanticError(
-                "La condicion del while debe ser bool para que funcione",
+                "La condicion del while debe ser bool/Principle para que funcione",
                 declaracion_while.line
             ))
         
@@ -562,9 +748,9 @@ class AlchemistSemanticAnalyzer:
             # segunda parte: condicion (debe ser bool)
             if declaracion_for.condition:
                 tipo_condicion = self._analizar_expresion(declaracion_for.condition)
-                if tipo_condicion and tipo_condicion != "bool":
+                if tipo_condicion and tipo_condicion not in ["bool", "Principle"]:
                     self.errors.append(SemanticError(
-                        "La condicion del for debe ser bool",
+                        "La condicion del for debe ser bool/Principle",
                         declaracion_for.line
                     ))
             
@@ -668,6 +854,10 @@ class AlchemistSemanticAnalyzer:
             # acceso a elemento de array: numeros[0]
             return self._analizar_acceso_array(expresion)
         
+        elif isinstance(expresion, MatrixAccess):
+            # acceso a elemento de matriz: matriz[1][2]
+            return self._analizar_acceso_matriz(expresion)
+        
         elif isinstance(expresion, BinaryOperation):
             # operaciones como +, -, *, ==, etc
             return self._analizar_operacion_binaria(expresion)
@@ -727,11 +917,11 @@ class AlchemistSemanticAnalyzer:
         
         # operadores logicos (and, or)
         elif expresion.operator in ["and", "or"]:
-            if tipo_izquierdo == "bool" and tipo_derecho == "bool":
+            if tipo_izquierdo in ["bool", "Principle"] and tipo_derecho in ["bool", "Principle"]:
                 return "bool"
             
             self.errors.append(SemanticError(
-                f"'{expresion.operator}' solo funciona con valores bool",
+                f"'{expresion.operator}' solo funciona con valores bool/Principle",
                 1  # TODO: pasar linea real
             ))
             return None
@@ -747,11 +937,11 @@ class AlchemistSemanticAnalyzer:
         
         if expresion.operator == "not":
             # not solo funciona con bool
-            if tipo_operando == "bool":
+            if tipo_operando in ["bool", "Principle"]:
                 return "bool"
             
             self.errors.append(SemanticError(
-                f"'not' solo funciona con bool, no con '{tipo_operando}'",
+                f"'not' solo funciona con bool/Principle, no con '{tipo_operando}'",
                 1  # TODO: pasar linea real
             ))
             return None
