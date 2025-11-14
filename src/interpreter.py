@@ -49,6 +49,7 @@ class AlchemistInterpreter:
         self.functions: Dict[str, int] = {}  # Mapeo función -> dirección
         self.output: str = ""  # Salida del programa como string
         self.input_buffer: List[str] = []  # Buffer de entrada
+        self.input_callback = None  # Callback para solicitar entrada (usado en IDE)
         self.halted = False
         self.max_recursion_depth = max_recursion_depth  # Límite de recursión
     
@@ -147,6 +148,16 @@ class AlchemistInterpreter:
             input_lines: Lista de líneas de entrada
         """
         self.input_buffer = input_lines.copy()
+    
+    def set_input_callback(self, callback) -> None:
+        """
+        Establece un callback para solicitar entrada interactiva
+        
+        Args:
+            callback: Función que recibe (prompt: str, tipo: str) y retorna el valor ingresado
+                     tipo puede ser: "text", "int", "float", "bool"
+        """
+        self.input_callback = callback
     
     def execute(self) -> str:
         """
@@ -487,7 +498,7 @@ class AlchemistInterpreter:
         
         # Manejar concatenación de strings
         if isinstance(a, str) or isinstance(b, str):
-            result = str(a) + str(b)
+            result = self.format_value_for_output(a) + self.format_value_for_output(b)
         else:
             result = a + b
         
@@ -785,18 +796,25 @@ class AlchemistInterpreter:
             if arg_count > 1:
                 raise RuntimeError(f"Absorb() espera 0 o 1 argumento, se encontraron {arg_count}")
             
-            # Si hay argumento, es el prompt (lo imprimimos pero no lo usamos para input)
+            # Determinar el prompt
+            prompt = "Ingresa un texto"
             if arg_count == 1:
                 if not self.stack:
                     raise RuntimeError("Argumento faltante para Absorb()")
-                prompt = self.stack.pop()
-                self.output.append(str(prompt))
+                prompt = str(self.stack.pop())
             
-            if self.input_buffer:
+            # Obtener entrada
+            if self.input_callback:
+                # Modo IDE: usar callback para mostrar diálogo
+                value = self.input_callback(prompt, "text")
+            elif self.input_buffer:
+                # Modo pre-cargado
                 value = self.input_buffer.pop(0)
-                self.stack.append(value)
             else:
-                self.stack.append("")  # Entrada vacía
+                # Modo terminal
+                value = input(prompt + ": ")
+            
+            self.stack.append(value if value else "")
         
         elif function_name == "AbsorbSolid":
             # AbsorbSolid lee un entero
@@ -804,22 +822,31 @@ class AlchemistInterpreter:
             if arg_count > 1:
                 raise RuntimeError(f"AbsorbSolid() espera 0 o 1 argumento, se encontraron {arg_count}")
             
-            # Si hay argumento, es el prompt
+            # Determinar el prompt
+            prompt = "Ingresa un numero entero"
             if arg_count == 1:
                 if not self.stack:
                     raise RuntimeError("Argumento faltante para AbsorbSolid()")
-                prompt = self.stack.pop()
-                self.output.append(str(prompt))
+                prompt = str(self.stack.pop())
             
-            if self.input_buffer:
+            # Obtener entrada
+            if self.input_callback:
+                # Modo IDE: usar callback para mostrar diálogo
+                value = self.input_callback(prompt, "int")
+            elif self.input_buffer:
+                # Modo pre-cargado
                 value = self.input_buffer.pop(0)
-                try:
-                    value = int(value)
-                except ValueError:
-                    raise RuntimeError(f"AbsorbSolid() esperaba un número entero, obtuvo: {value}")
-                self.stack.append(value)
             else:
-                self.stack.append(0)  # Valor por defecto
+                # Modo terminal
+                value = input(prompt + ": ")
+            
+            # Convertir a entero
+            try:
+                value = int(value)
+            except (ValueError, TypeError):
+                raise RuntimeError(f"AbsorbSolid() esperaba un número entero, obtuvo: {value}")
+            
+            self.stack.append(value)
         
         elif function_name == "AbsorbLiquid":
             # AbsorbLiquid lee un flotante
@@ -827,22 +854,31 @@ class AlchemistInterpreter:
             if arg_count > 1:
                 raise RuntimeError(f"AbsorbLiquid() espera 0 o 1 argumento, se encontraron {arg_count}")
             
-            # Si hay argumento, es el prompt
+            # Determinar el prompt
+            prompt = "Ingresa un numero decimal"
             if arg_count == 1:
                 if not self.stack:
                     raise RuntimeError("Argumento faltante para AbsorbLiquid()")
-                prompt = self.stack.pop()
-                self.output.append(str(prompt))
+                prompt = str(self.stack.pop())
             
-            if self.input_buffer:
+            # Obtener entrada
+            if self.input_callback:
+                # Modo IDE: usar callback para mostrar diálogo
+                value = self.input_callback(prompt, "float")
+            elif self.input_buffer:
+                # Modo pre-cargado
                 value = self.input_buffer.pop(0)
-                try:
-                    value = float(value)
-                except ValueError:
-                    raise RuntimeError(f"AbsorbLiquid() esperaba un número decimal, obtuvo: {value}")
-                self.stack.append(value)
             else:
-                self.stack.append(0.0)  # Valor por defecto
+                # Modo terminal
+                value = input(prompt + ": ")
+            
+            # Convertir a flotante
+            try:
+                value = float(value)
+            except (ValueError, TypeError):
+                raise RuntimeError(f"AbsorbLiquid() esperaba un número decimal, obtuvo: {value}")
+            
+            self.stack.append(value)
         
         elif function_name == "AbsorbPrinciple":
             # AbsorbPrinciple lee un booleano
@@ -852,21 +888,27 @@ class AlchemistInterpreter:
             if arg_count > 1:
                 raise RuntimeError(f"AbsorbPrinciple() espera 0 o 1 argumento, se encontraron {arg_count}")
             
-            # Si hay argumento, es el prompt
+            # Determinar el prompt
+            prompt = "Ingresa un valor booleano (Accepted/Rejected)"
             if arg_count == 1:
                 if not self.stack:
                     raise RuntimeError("Argumento faltante para AbsorbPrinciple()")
-                prompt = self.stack.pop()
-                self.output.append(str(prompt))
+                prompt = str(self.stack.pop())
             
-            if self.input_buffer:
+            # Obtener entrada
+            if self.input_callback:
+                # Modo IDE: usar callback para mostrar diálogo
+                value = self.input_callback(prompt, "bool")
+            elif self.input_buffer:
+                # Modo pre-cargado
                 value = self.input_buffer.pop(0)
-                # Si hay texto (no vacío) -> True (Accepted)
-                # Si está vacío -> False (Rejected)
-                result = bool(value.strip())
-                self.stack.append(result)
             else:
-                self.stack.append(False)  # Valor por defecto (Rejected)
+                # Modo terminal
+                value = input(prompt + ": ")
+            
+            # Convertir a booleano: texto no vacío -> True
+            result = bool(value.strip()) if isinstance(value, str) else bool(value)
+            self.stack.append(result)
         
         # Funciones tradicionales
         elif function_name == "print":

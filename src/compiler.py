@@ -188,13 +188,15 @@ class AlchemistCompiler:
         )
     
     def execute(self, compilation_result: CompilationResult, 
-               input_data: Optional[List[str]] = None) -> ExecutionResult:
+               input_data: Optional[List[str]] = None,
+               input_callback=None) -> ExecutionResult:
         """
         Ejecuta código compilado
         
         Args:
             compilation_result: Resultado de compilación exitosa
             input_data: Datos de entrada para el programa (opcional)
+            input_callback: Callback para entrada interactiva (opcional)
             
         Returns:
             Resultado de la ejecución
@@ -202,7 +204,7 @@ class AlchemistCompiler:
         if not compilation_result.success:
             return ExecutionResult(
                 success=False,
-                output=[],
+                output="",
                 errors=["No se puede ejecutar: compilación falló"]
             )
         
@@ -220,6 +222,10 @@ class AlchemistCompiler:
                 compilation_result.variables,
                 compilation_result.functions
             )
+            
+            # Establecer callback de entrada si se proporciona
+            if input_callback:
+                interpreter.set_input_callback(input_callback)
             
             # Establecer entrada si se proporciona
             if input_data:
