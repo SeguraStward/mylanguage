@@ -30,7 +30,7 @@ class CompilationResult:
 class ExecutionResult:
     """Resultado de la ejecución"""
     success: bool
-    output: List[str]
+    output: str
     errors: List[str]
     execution_time: float = 0.0
 
@@ -211,8 +211,11 @@ class AlchemistCompiler:
             print("=" * 50)
         
         try:
+            # Crear un nuevo intérprete para cada ejecución (evita estado residual)
+            interpreter = AlchemistInterpreter()
+            
             # Cargar programa en el intérprete
-            self.interpreter.load_program(
+            interpreter.load_program(
                 compilation_result.instructions,
                 compilation_result.variables,
                 compilation_result.functions
@@ -220,7 +223,7 @@ class AlchemistCompiler:
             
             # Establecer entrada si se proporciona
             if input_data:
-                self.interpreter.set_input(input_data)
+                interpreter.set_input(input_data)
                 if self.verbose:
                     print(f"📥 Entrada configurada: {len(input_data)} líneas")
             
@@ -228,13 +231,13 @@ class AlchemistCompiler:
             import time
             start_time = time.time()
             
-            output = self.interpreter.execute()
+            output = interpreter.execute()
             
             execution_time = time.time() - start_time
             
             if self.verbose:
                 print(f"✅ Ejecución completada en {execution_time:.3f}s")
-                print(f"📄 Salida generada: {len(output)} líneas")
+                print(f"📄 Salida generada: {len(output.splitlines())} líneas")
             
             return ExecutionResult(
                 success=True,
@@ -246,13 +249,13 @@ class AlchemistCompiler:
         except RuntimeError as e:
             return ExecutionResult(
                 success=False,
-                output=self.interpreter.get_output(),
+                output=interpreter.get_output() if 'interpreter' in locals() else "",
                 errors=[f"Error de ejecución: {e}"]
             )
         except Exception as e:
             return ExecutionResult(
                 success=False,
-                output=[],
+                output="",
                 errors=[f"Error interno durante ejecución: {e}"]
             )
     

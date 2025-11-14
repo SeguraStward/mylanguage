@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
- 
+
 
 import sys
 import os
 
-from src.ide import AlchemistIDE
+from src.ide_simple import AlchemistIDESimple
 
 
 def main():
-    """Funcion principal"""
+    """Función principal - Ejecuta el IDE de Alchemist"""
     try:
-        ide = AlchemistIDE()
+        ide = AlchemistIDESimple()
         ide.run()
     except KeyboardInterrupt:
         print("\n👋 ¡Hasta luego!")

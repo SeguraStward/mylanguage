@@ -107,26 +107,53 @@ class AlchemistSemanticAnalyzer:
         """agrega las funciones que ya vienen con Alchemist como Transmute, Absorb, etc"""
         
         # funcion Absorb() que devuelve string (lee entrada)
+        # Puede recibir opcionalmente un prompt
         simbolo_absorb = Symbol(
             name="Absorb",
             type="Inscription",
             is_function=True,
-            parameters=[],
+            parameters=[],  # Acepta 0 o 1 argumento
             return_type="Inscription",
             line=0
         )
         self.global_table.declare(simbolo_absorb)
         
         # funcion AbsorbSolid() que devuelve int (lee un entero)
+        # Puede recibir opcionalmente un prompt
         simbolo_absorbsolid = Symbol(
             name="AbsorbSolid",
             type="Solid",
             is_function=True,
-            parameters=[],
+            parameters=[],  # Acepta 0 o 1 argumento
             return_type="Solid",
             line=0
         )
         self.global_table.declare(simbolo_absorbsolid)
+        
+        # funcion AbsorbLiquid() que devuelve float (lee un decimal)
+        # Puede recibir opcionalmente un prompt
+        simbolo_absorbliquid = Symbol(
+            name="AbsorbLiquid",
+            type="Liquid",
+            is_function=True,
+            parameters=[],  # Acepta 0 o 1 argumento
+            return_type="Liquid",
+            line=0
+        )
+        self.global_table.declare(simbolo_absorbliquid)
+        
+        # funcion AbsorbPrinciple() que devuelve bool (lee un booleano)
+        # Puede recibir opcionalmente un prompt
+        # Si recibe algo -> Accepted, si vacío -> Rejected
+        simbolo_absorbprinciple = Symbol(
+            name="AbsorbPrinciple",
+            type="Principle",
+            is_function=True,
+            parameters=[],  # Acepta 0 o 1 argumento
+            return_type="Principle",
+            line=0
+        )
+        self.global_table.declare(simbolo_absorbprinciple)
         
         # funcion Transmute que imprime (acepta cualquier tipo)
         simbolo_transmute = Symbol(
@@ -138,6 +165,17 @@ class AlchemistSemanticAnalyzer:
             line=0
         )
         self.global_table.declare(simbolo_transmute)
+        
+        # funcion TransmuteLine que imprime con salto de línea (acepta cualquier tipo)
+        simbolo_transmuteline = Symbol(
+            name="TransmuteLine",
+            type="void",
+            is_function=True,
+            parameters=[Parameter("value", "any")],  # Acepta cualquier tipo
+            return_type="void",
+            line=0
+        )
+        self.global_table.declare(simbolo_transmuteline)
         
         # Funciones tradicionales para compatibilidad
         # funcion read() que devuelve string
@@ -885,11 +923,12 @@ class AlchemistSemanticAnalyzer:
         if expresion.operator in ["+", "-", "*", "/", "%"]:
             if expresion.operator == "+":
                 # el + es especial porque puede sumar numeros o concatenar strings
-                if tipo_izquierdo == "string" and tipo_derecho == "string":
-                    return "string"
-                elif tipo_izquierdo == "string" or tipo_derecho == "string":
+                # Inscription es el tipo string en Alchemist
+                if tipo_izquierdo in ["string", "Inscription"] and tipo_derecho in ["string", "Inscription"]:
+                    return tipo_izquierdo  # retorna Inscription si es ese tipo
+                elif tipo_izquierdo in ["string", "Inscription"] or tipo_derecho in ["string", "Inscription"]:
                     # permitimos concatenar string con otros tipos (conversion automatica)
-                    return "string"
+                    return "Inscription" if tipo_izquierdo == "Inscription" or tipo_derecho == "Inscription" else "string"
                 elif self._es_numerico(tipo_izquierdo) and self._es_numerico(tipo_derecho):
                     return self._obtener_tipo_resultado_numerico(tipo_izquierdo, tipo_derecho)
             else:
@@ -983,15 +1022,32 @@ class AlchemistSemanticAnalyzer:
         parametros_esperados = len(simbolo_funcion.parameters) if simbolo_funcion.parameters else 0
         argumentos_recibidos = len(expresion.arguments)
         
-        if parametros_esperados != argumentos_recibidos:
+        # Las funciones Absorb* pueden recibir 0 o 1 argumento (prompt opcional)
+        funciones_absorb = ["Absorb", "AbsorbSolid", "AbsorbLiquid", "AbsorbPrinciple"]
+        if expresion.name in funciones_absorb:
+            if argumentos_recibidos > 1:
+                self.errors.append(SemanticError(
+                    f"La funcion '{expresion.name}' acepta 0 o 1 argumento (prompt opcional), pero recibio {argumentos_recibidos}",
+                    expresion.line
+                ))
+                return simbolo_funcion.return_type
+            # Si tiene 1 argumento, debe ser un string (prompt)
+            if argumentos_recibidos == 1:
+                tipo_argumento = self._analizar_expresion(expresion.arguments[0])
+                if tipo_argumento and tipo_argumento not in ["string", "Inscription"]:
+                    self.errors.append(SemanticError(
+                        f"El prompt de '{expresion.name}' debe ser un string, pero recibio '{tipo_argumento}'",
+                        expresion.line
+                    ))
+        elif parametros_esperados != argumentos_recibidos:
             self.errors.append(SemanticError(
                 f"La funcion '{expresion.name}' necesita {parametros_esperados} argumentos, pero le diste {argumentos_recibidos}",
                 expresion.line
             ))
             return simbolo_funcion.return_type
         
-        # verificar tipos de argumentos
-        if simbolo_funcion.parameters:
+        # verificar tipos de argumentos (solo para funciones que no son Absorb*)
+        if simbolo_funcion.parameters and expresion.name not in funciones_absorb:
             for i, (parametro, argumento) in enumerate(zip(simbolo_funcion.parameters, expresion.arguments)):
                 tipo_argumento = self._analizar_expresion(argumento)
                 if tipo_argumento and not self._tipos_compatibles(parametro.type, tipo_argumento):
@@ -1007,7 +1063,13 @@ class AlchemistSemanticAnalyzer:
         verifica si dos tipos son compatibles entre si
         Mapea los tipos alquímicos a los tradicionales:
         Solid <-> int, Liquid <-> float, Inscription <-> string, Principle <-> bool
+        Emptiness se puede asignar a cualquier tipo (representa null)
+        Solid puede promocionarse implícitamente a Liquid (int -> float)
         """
+        # Emptiness se puede asignar a cualquier tipo
+        if tipo_actual == "Emptiness" or tipo_esperado == "Emptiness":
+            return True
+        
         # Mapeo de tipos alquímicos a tradicionales
         tipo_map = {
             "Solid": "int",
@@ -1022,6 +1084,10 @@ class AlchemistSemanticAnalyzer:
         
         # Permitir "any" para funciones que aceptan cualquier tipo (como Transmute)
         if tipo_esperado_norm == "any" or tipo_actual_norm == "any":
+            return True
+        
+        # Promoción implícita: Solid (int) puede asignarse a Liquid (float)
+        if tipo_esperado_norm == "float" and tipo_actual_norm == "int":
             return True
         
         return tipo_esperado_norm == tipo_actual_norm

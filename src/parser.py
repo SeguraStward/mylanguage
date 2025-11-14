@@ -904,6 +904,9 @@ class AlchemistParser:
         if self._match(TokenType.REJECTED):
             return Literal(False, "Principle")
         
+        if self._match(TokenType.EMPTINESS):
+            return Literal(None, "Emptiness")
+        
         if self._match(TokenType.INTEGER):
             value = int(self._previous().value)
             return Literal(value, "Solid")
@@ -923,6 +926,12 @@ class AlchemistParser:
             line = self._previous().line
             return Variable(name, line)
         
+        # Manejar TransmuteLine como función especial
+        if self._match(TokenType.TRANSMUTELINE):
+            name = self._previous().value
+            line = self._previous().line
+            return Variable(name, line)
+        
         # Manejar Absorb como función especial  
         if self._match(TokenType.ABSORB):
             name = self._previous().value
@@ -931,6 +940,18 @@ class AlchemistParser:
             
         # Manejar AbsorbSolid como función especial
         if self._match(TokenType.ABSORBSOLID):
+            name = self._previous().value
+            line = self._previous().line
+            return Variable(name, line)
+        
+        # Manejar AbsorbLiquid como función especial
+        if self._match(TokenType.ABSORBLIQUID):
+            name = self._previous().value
+            line = self._previous().line
+            return Variable(name, line)
+        
+        # Manejar AbsorbPrinciple como función especial
+        if self._match(TokenType.ABSORBPRINCIPLE):
             name = self._previous().value
             line = self._previous().line
             return Variable(name, line)

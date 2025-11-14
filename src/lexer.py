@@ -45,7 +45,10 @@ class TokenType(Enum):
     # palabras in/out
     ABSORB = "ABSORB"
     ABSORBSOLID = "ABSORBSOLID"
+    ABSORBLIQUID = "ABSORBLIQUID"
+    ABSORBPRINCIPLE = "ABSORBPRINCIPLE"
     TRANSMUTE = "TRANSMUTE"
+    TRANSMUTELINE = "TRANSMUTELINE"
     
     # valores alquimicos
     SOLID = "SOLID"
@@ -53,6 +56,7 @@ class TokenType(Enum):
     INSCRIPTION = "INSCRIPTION"
     ACCEPTED = "ACCEPTED"
     REJECTED = "REJECTED"
+    EMPTINESS = "EMPTINESS"
     
     # Operadores
     PLUS = "PLUS"
@@ -154,11 +158,15 @@ class AlchemistLexer:
             # valores de principio alquimico
             'Accepted': TokenType.ACCEPTED,
             'Rejected': TokenType.REJECTED,
+            'Emptiness': TokenType.EMPTINESS,
             
             # funciones I/O alquimicas
             'Absorb': TokenType.ABSORB,
             'AbsorbSolid': TokenType.ABSORBSOLID,
+            'AbsorbLiquid': TokenType.ABSORBLIQUID,
+            'AbsorbPrinciple': TokenType.ABSORBPRINCIPLE,
             'Transmute': TokenType.TRANSMUTE,
+            'TransmuteLine': TokenType.TRANSMUTELINE,
         }
         
         # patrones de expresiones regulares

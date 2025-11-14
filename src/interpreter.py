@@ -18,6 +18,12 @@ class StackFrame:
     return_address: int
     local_vars: Dict[str, Any]
     parameters: List[Any]
+    local_memory: List[Any] = None  # Memoria local del frame
+    
+    def __post_init__(self):
+        """Inicializa la memoria local si no se proporciona"""
+        if self.local_memory is None:
+            self.local_memory = [None] * 1000
 
 
 class RuntimeError(Exception):
@@ -31,7 +37,7 @@ class RuntimeError(Exception):
 class AlchemistInterpreter:
     """Intérprete para Alchemist"""
     
-    def __init__(self):
+    def __init__(self, max_recursion_depth: int = 1000):
         """Inicializa el intérprete"""
         self.instructions: List[Instruction] = []
         self.memory: List[Any] = [None] * 1000  # Memoria simulada
@@ -41,9 +47,38 @@ class AlchemistInterpreter:
         self.labels: Dict[str, int] = {}  # Etiquetas -> dirección
         self.variables: Dict[str, int] = {}  # Mapeo variable -> dirección
         self.functions: Dict[str, int] = {}  # Mapeo función -> dirección
-        self.output: List[str] = []  # Salida del programa
+        self.output: str = ""  # Salida del programa como string
         self.input_buffer: List[str] = []  # Buffer de entrada
         self.halted = False
+        self.max_recursion_depth = max_recursion_depth  # Límite de recursión
+    
+    def format_value_for_output(self, value):
+        """
+        Convierte valores de Python a representación del lenguaje Alchemist
+        
+        Args:
+            value: Valor a formatear
+            
+        Returns:
+            str: Representación en formato Alchemist
+        """
+        if value is None:
+            return "Emptiness"
+        elif isinstance(value, bool):
+            return "Accepted" if value else "Rejected"
+        else:
+            return str(value)
+    
+    def _get_active_memory(self) -> List[Any]:
+        """
+        Retorna la memoria activa (local del frame o global)
+        
+        Returns:
+            La memoria local del frame activo si existe, sino la memoria global
+        """
+        if self.call_stack:
+            return self.call_stack[-1].local_memory
+        return self.memory
     
     def load_program(self, instructions: List[Instruction], 
                     variables: Dict[str, int] = None, 
@@ -113,17 +148,17 @@ class AlchemistInterpreter:
         """
         self.input_buffer = input_lines.copy()
     
-    def execute(self) -> List[str]:
+    def execute(self) -> str:
         """
         Ejecuta el programa cargado
         
         Returns:
-            Lista de líneas de salida del programa
+            String con la salida del programa
             
         Raises:
             RuntimeError: Si ocurre un error durante la ejecución
         """
-        self.output = []
+        self.output = ""
         self.halted = False
         self.instruction_pointer = 0
         
@@ -229,12 +264,16 @@ class AlchemistInterpreter:
     def _exec_load(self, instruction: Instruction) -> None:
         """Carga un valor de memoria en la pila"""
         address = instruction.arg1
-        if address >= len(self.memory):
+        active_memory = self._get_active_memory()
+        
+        if address >= len(active_memory):
             raise RuntimeError(f"Dirección de memoria inválida: {address}")
         
-        value = self.memory[address]
-        if value is None:
-            raise RuntimeError(f"Variable no inicializada en dirección {address}")
+        value = active_memory[address]
+        # Permitir None solo si fue explícitamente asignado (Emptiness)
+        # Si nunca fue inicializado, active_memory[address] es None de forma implícita
+        # Pero necesitamos distinguir entre "nunca inicializado" y "asignado a Emptiness"
+        # Por ahora, permitimos None (será validado en tiempo de compilación)
         
         self.stack.append(value)
         self.instruction_pointer += 1
@@ -246,11 +285,12 @@ class AlchemistInterpreter:
         
         value = self.stack.pop()
         address = instruction.arg1
+        active_memory = self._get_active_memory()
         
-        if address >= len(self.memory):
+        if address >= len(active_memory):
             raise RuntimeError(f"Dirección de memoria inválida: {address}")
         
-        self.memory[address] = value
+        active_memory[address] = value
         self.instruction_pointer += 1
     
     def _exec_store_param(self, instruction: Instruction) -> None:
@@ -266,7 +306,7 @@ class AlchemistInterpreter:
             raise RuntimeError(f"Índice de parámetro inválido: {param_index}")
         
         value = frame.parameters[param_index]
-        self.memory[address] = value
+        frame.local_memory[address] = value  # Usar memoria local del frame
         self.instruction_pointer += 1
     
     def _exec_store_array(self, instruction: Instruction) -> None:
@@ -671,10 +711,17 @@ class AlchemistInterpreter:
         arg_count = instruction.arg2
         
         # Manejar funciones built-in (tradicionales y alquímicas)
-        builtin_functions = ["print", "write", "read", "Transmute", "Absorb", "AbsorbSolid"]
+        builtin_functions = ["print", "write", "read", "Transmute", "TransmuteLine", "Absorb", "AbsorbSolid", "AbsorbLiquid", "AbsorbPrinciple"]
         if function_name in builtin_functions:
             self._call_builtin_function(function_name, arg_count)
             return
+        
+        # Validar límite de recursión antes de hacer la llamada
+        if len(self.call_stack) >= self.max_recursion_depth:
+            raise RuntimeError(
+                f"Límite de recursión excedido ({self.max_recursion_depth} llamadas). "
+                f"Posible recursión infinita en función '{function_name}'"
+            )
         
         # Verificar que la función existe
         if function_name not in self.labels:
@@ -707,7 +754,7 @@ class AlchemistInterpreter:
         """Ejecuta una función built-in del sistema"""
         # Funciones alquímicas
         if function_name == "Transmute":
-            # Transmute imprime un valor (equivalente alquímico de print)
+            # Transmute imprime un valor SIN salto de línea
             if arg_count != 1:
                 raise RuntimeError(f"Transmute() espera 1 argumento, se encontraron {arg_count}")
             
@@ -715,14 +762,35 @@ class AlchemistInterpreter:
                 raise RuntimeError("Argumento faltante para Transmute()")
             
             value = self.stack.pop()
-            self.output.append(str(value))
+            self.output += self.format_value_for_output(value)  # Sin salto de línea
             # Transmute es void, pero ponemos None en la pila para el POP
+            self.stack.append(None)
+        
+        elif function_name == "TransmuteLine":
+            # TransmuteLine imprime un valor CON salto de línea
+            if arg_count != 1:
+                raise RuntimeError(f"TransmuteLine() espera 1 argumento, se encontraron {arg_count}")
+            
+            if not self.stack:
+                raise RuntimeError("Argumento faltante para TransmuteLine()")
+            
+            value = self.stack.pop()
+            self.output += self.format_value_for_output(value) + "\n"  # Con salto de línea
+            # TransmuteLine es void, pero ponemos None en la pila para el POP
             self.stack.append(None)
         
         elif function_name == "Absorb":
             # Absorb lee entrada de texto (equivalente alquímico de read)
-            if arg_count != 0:
-                raise RuntimeError(f"Absorb() no espera argumentos, se encontraron {arg_count}")
+            # Puede recibir 0 o 1 argumento (prompt opcional)
+            if arg_count > 1:
+                raise RuntimeError(f"Absorb() espera 0 o 1 argumento, se encontraron {arg_count}")
+            
+            # Si hay argumento, es el prompt (lo imprimimos pero no lo usamos para input)
+            if arg_count == 1:
+                if not self.stack:
+                    raise RuntimeError("Argumento faltante para Absorb()")
+                prompt = self.stack.pop()
+                self.output.append(str(prompt))
             
             if self.input_buffer:
                 value = self.input_buffer.pop(0)
@@ -732,8 +800,16 @@ class AlchemistInterpreter:
         
         elif function_name == "AbsorbSolid":
             # AbsorbSolid lee un entero
-            if arg_count != 0:
-                raise RuntimeError(f"AbsorbSolid() no espera argumentos, se encontraron {arg_count}")
+            # Puede recibir 0 o 1 argumento (prompt opcional)
+            if arg_count > 1:
+                raise RuntimeError(f"AbsorbSolid() espera 0 o 1 argumento, se encontraron {arg_count}")
+            
+            # Si hay argumento, es el prompt
+            if arg_count == 1:
+                if not self.stack:
+                    raise RuntimeError("Argumento faltante para AbsorbSolid()")
+                prompt = self.stack.pop()
+                self.output.append(str(prompt))
             
             if self.input_buffer:
                 value = self.input_buffer.pop(0)
@@ -744,6 +820,53 @@ class AlchemistInterpreter:
                 self.stack.append(value)
             else:
                 self.stack.append(0)  # Valor por defecto
+        
+        elif function_name == "AbsorbLiquid":
+            # AbsorbLiquid lee un flotante
+            # Puede recibir 0 o 1 argumento (prompt opcional)
+            if arg_count > 1:
+                raise RuntimeError(f"AbsorbLiquid() espera 0 o 1 argumento, se encontraron {arg_count}")
+            
+            # Si hay argumento, es el prompt
+            if arg_count == 1:
+                if not self.stack:
+                    raise RuntimeError("Argumento faltante para AbsorbLiquid()")
+                prompt = self.stack.pop()
+                self.output.append(str(prompt))
+            
+            if self.input_buffer:
+                value = self.input_buffer.pop(0)
+                try:
+                    value = float(value)
+                except ValueError:
+                    raise RuntimeError(f"AbsorbLiquid() esperaba un número decimal, obtuvo: {value}")
+                self.stack.append(value)
+            else:
+                self.stack.append(0.0)  # Valor por defecto
+        
+        elif function_name == "AbsorbPrinciple":
+            # AbsorbPrinciple lee un booleano
+            # Si recibe texto no vacío -> Accepted (True)
+            # Si recibe texto vacío -> Rejected (False)
+            # Puede recibir 0 o 1 argumento (prompt opcional)
+            if arg_count > 1:
+                raise RuntimeError(f"AbsorbPrinciple() espera 0 o 1 argumento, se encontraron {arg_count}")
+            
+            # Si hay argumento, es el prompt
+            if arg_count == 1:
+                if not self.stack:
+                    raise RuntimeError("Argumento faltante para AbsorbPrinciple()")
+                prompt = self.stack.pop()
+                self.output.append(str(prompt))
+            
+            if self.input_buffer:
+                value = self.input_buffer.pop(0)
+                # Si hay texto (no vacío) -> True (Accepted)
+                # Si está vacío -> False (Rejected)
+                result = bool(value.strip())
+                self.stack.append(result)
+            else:
+                self.stack.append(False)  # Valor por defecto (Rejected)
         
         # Funciones tradicionales
         elif function_name == "print":
@@ -852,9 +975,9 @@ class AlchemistInterpreter:
         self.stack.pop()
         self.instruction_pointer += 1
     
-    def get_output(self) -> List[str]:
+    def get_output(self) -> str:
         """Retorna la salida generada por el programa"""
-        return self.output.copy()
+        return self.output
     
     def get_memory_dump(self) -> Dict[str, Any]:
         """Retorna un dump del estado de la memoria para debugging"""
