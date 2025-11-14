@@ -1,0 +1,59 @@
+// Test de funciones y recursión
+Transmutation GateOfTruth() -> void {
+    Transmute("=== TEST DE FUNCIONES ===")
+    
+    // Test 1: Función simple
+    Solid resultado1 = sumar(5, 3)
+    Transmute("5 + 3 = " + resultado1)
+    
+    // Test 2: Función con múltiples parámetros
+    Solid area = calcularArea(10, 20)
+    Transmute("Area de 10x20 = " + area)
+    
+    // Test 3: Función recursiva - Factorial
+    Solid fact5 = factorial(5)
+    Transmute("Factorial de 5 = " + fact5)
+    
+    // Test 4: Función recursiva - Fibonacci
+    Transmute("Primeros 10 números de Fibonacci:")
+    AlchemicCycle (Solid i = 0; i < 10; i = i + 1) {
+        Solid fib = fibonacci(i)
+        Transmute(fib)
+    }
+    
+    // Test 5: Función void
+    saludar("Edward Elric")
+    
+    Transmute("=== TEST COMPLETADO ===")
+}
+
+Transmutation sumar(Solid a, Solid b) -> Solid {
+    EquivalentExchange a + b
+}
+
+Transmutation calcularArea(Solid base, Solid altura) -> Solid {
+    Solid area = base * altura
+    EquivalentExchange area
+}
+
+Transmutation factorial(Solid n) -> Solid {
+    Observe (n <= 1) {
+        EquivalentExchange 1
+    }
+    Solid anterior = factorial(n - 1)
+    EquivalentExchange n * anterior
+}
+
+Transmutation fibonacci(Solid n) -> Solid {
+    Observe (n <= 1) {
+        EquivalentExchange n
+    }
+    Solid fib1 = fibonacci(n - 1)
+    Solid fib2 = fibonacci(n - 2)
+    EquivalentExchange fib1 + fib2
+}
+
+Transmutation saludar(Inscription nombre) -> void {
+    Transmute("Hola, " + nombre + "!")
+    Transmute("Bienvenido al mundo de Alchemist")
+}

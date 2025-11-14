@@ -1,0 +1,36 @@
+// ====================================
+// TEST: Errores de Control de Flujo
+// Debe detectar uso incorrecto de condiciones no booleanas
+// ====================================
+
+Transmutation GateOfTruth() -> void {
+    Transmute("=== Test de Errores de Control de Flujo ===")
+    
+    // ERROR 1: Condición no booleana en Observe
+    Solid x = 10
+    Observe(x) {
+        Transmute("Esto no debería compilar")
+    }
+    
+    // ERROR 2: Condición no booleana en TransmuteUntil
+    TransmuteUntil("texto") {
+        Transmute("Esto tampoco")
+    }
+    
+    // ERROR 3: Variable de for no Solid
+    Inscription i = ""
+    For(i = 0; i < 10; i = i + 1) {
+        Transmute("Error")
+    }
+    
+    // ERROR 6: Condición de for no Principle
+    For(Solid j = 0; j + 5; j = j + 1) {
+        Transmute("Condición inválida")
+    }
+    
+    // ERROR 7: Comparación con string en TransmuteUntil
+    Inscription nombre = "Ana"
+    TransmuteUntil(nombre == 10) {
+        Transmute("Tipos incompatibles")
+    }
+}

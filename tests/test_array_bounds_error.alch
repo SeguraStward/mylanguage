@@ -1,0 +1,16 @@
+// Test de validación de rangos en arrays (debe fallar con índice fuera de rango)
+Transmutation GateOfTruth() -> void {
+    Transmute("=== TEST DE VALIDACION DE RANGOS - ARRAYS ===")
+    
+    AlchemicArray[Solid, 5] numeros
+    numeros[0] = 10
+    numeros[1] = 20
+    numeros[2] = 30
+    numeros[3] = 40
+    numeros[4] = 50
+    
+    // Este acceso debería causar error: índice 5 fuera de rango [0-4]
+    Transmute("Intentando acceder a indice 5 (fuera de rango):")
+    Solid valor = numeros[5]
+    Transmute("Si ves esto, el test FALLO")
+}

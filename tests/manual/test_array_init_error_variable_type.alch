@@ -1,0 +1,11 @@
+// ERROR SEMÁNTICO: Variable de tipo incorrecto
+
+Transmutation GateOfTruth() -> void {
+    Inscription texto = "Hola"
+    Solid numero = 42
+    
+    // Error: Variable String en array de Solid
+    AlchemicArray[Solid, 2] arr = [numero, texto]
+    
+    Transmute("Este código no debería ejecutarse")
+}

@@ -1,0 +1,61 @@
+// Ejemplo práctico: Opciones del usuario con Emptiness
+Transmutation GateOfTruth() -> void {
+    Transmute("=== Sistema con Valores Opcionales ===")
+    Transmute("")
+    
+    // Simular configuración con valores opcionales
+    Solid puerto = Emptiness
+    Inscription servidor = Emptiness
+    
+    Transmute("Configuración inicial:")
+    Transmute("Puerto: ")
+    Transmute(puerto)
+    Transmute("Servidor: ")
+    Transmute(servidor)
+    Transmute("")
+    
+    // Verificar si hay configuración
+    Observe(puerto == Emptiness) {
+        Transmute("⚠ Puerto no configurado, usando default...")
+        puerto = 8080
+    }
+    
+    Observe(servidor == Emptiness) {
+        Transmute("⚠ Servidor no configurado, usando default...")
+        servidor = "localhost"
+    }
+    Transmute("")
+    
+    Transmute("Configuración final:")
+    Transmute("Puerto: ")
+    Transmute(puerto)
+    Transmute("Servidor: ")
+    Transmute(servidor)
+    Transmute("")
+    
+    // Simular búsqueda que puede fallar
+    Transmute("=== Búsqueda de Usuario ===")
+    Solid userId = Emptiness
+    Solid busquedaId = 123
+    
+    // Simular que no encontramos el usuario
+    Observe(busquedaId == 999) {
+        userId = 999
+    }
+    
+    Transmute("Buscando usuario ID ")
+    Transmute(busquedaId)
+    Transmute(": ")
+    
+    Observe(userId == Emptiness) {
+        Transmute("❌ Usuario no encontrado")
+    }
+    
+    Observe(userId != Emptiness) {
+        Transmute("✓ Usuario encontrado con ID ")
+        Transmute(userId)
+    }
+    
+    Transmute("")
+    Transmute("=== Fin ===")
+}

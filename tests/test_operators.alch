@@ -1,0 +1,83 @@
+// Test de operadores aritméticos y lógicos
+Transmutation GateOfTruth() -> void {
+    Transmute("=== TEST DE OPERADORES ===")
+    
+    // Test 1: Operadores aritméticos con Solid (int)
+    Solid a = 10
+    Solid b = 3
+    
+    Transmute("Operaciones con 10 y 3:")
+    Solid suma = a + b
+    Transmute("Suma: " + suma)
+    
+    Solid resta = a - b
+    Transmute("Resta: " + resta)
+    
+    Solid mult = a * b
+    Transmute("Multiplicacion: " + mult)
+    
+    Solid div = a / b
+    Transmute("Division: " + div)
+    
+    Solid mod = a % b
+    Transmute("Modulo: " + mod)
+    
+    // Test 2: Operadores con Liquid (float)
+    Liquid x = 10.5
+    Liquid y = 2.5
+    
+    Transmute("Operaciones con 10.5 y 2.5:")
+    Liquid sumaf = x + y
+    Transmute("Suma: " + sumaf)
+    
+    Liquid restaf = x - y
+    Transmute("Resta: " + restaf)
+    
+    Liquid multf = x * y
+    Transmute("Multiplicacion: " + multf)
+    
+    Liquid divf = x / y
+    Transmute("Division: " + divf)
+    
+    // Test 3: Operadores de comparación
+    Transmute("Comparaciones:")
+    Principle igual = a == b
+    Transmute("10 == 3: " + igual)
+    
+    Principle diferente = a != b
+    Transmute("10 != 3: " + diferente)
+    
+    Principle mayor = a > b
+    Transmute("10 > 3: " + mayor)
+    
+    Principle menor = a < b
+    Transmute("10 < 3: " + menor)
+    
+    Principle mayorigual = a >= b
+    Transmute("10 >= 3: " + mayorigual)
+    
+    Principle menorigual = a <= b
+    Transmute("10 <= 3: " + menorigual)
+    
+    // Test 4: Operadores lógicos
+    Principle verdadero = Accepted
+    Principle falso = Rejected
+    
+    Transmute("Operadores logicos:")
+    Principle yLogico = verdadero and falso
+    Transmute("Accepted and Rejected: " + yLogico)
+    
+    Principle oLogico = verdadero or falso
+    Transmute("Accepted or Rejected: " + oLogico)
+    
+    Principle noLogico = not verdadero
+    Transmute("not Accepted: " + noLogico)
+    
+    // Test 5: Concatenación de strings
+    Inscription nombre = "Edward"
+    Inscription apellido = "Elric"
+    Inscription nombreCompleto = nombre + " " + apellido
+    Transmute("Nombre completo: " + nombreCompleto)
+    
+    Transmute("=== TEST COMPLETADO ===")
+}

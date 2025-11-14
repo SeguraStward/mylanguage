@@ -1,0 +1,49 @@
+// Test de programa completo - Calculadora de números primos
+Transmutation GateOfTruth() -> void {
+    Transmute("=== CALCULADORA DE NUMEROS PRIMOS ===")
+    Transmute("Encuentra los primeros N numeros primos")
+    
+    Transmute("Cuantos primos quieres calcular?")
+    Solid cantidad = AbsorbSolid()
+    
+    Solid encontrados = 0
+    Solid numero = 2
+    
+    Transmute("Los primeros " + cantidad + " numeros primos son:")
+    
+    TransmuteUntil (encontrados >= cantidad) {
+        Principle esPrimo = verificarPrimo(numero)
+        
+        Observe (esPrimo == Accepted) {
+            Transmute(numero)
+            encontrados = encontrados + 1
+        }
+        
+        numero = numero + 1
+    }
+    
+    Transmute("=== CALCULO COMPLETADO ===")
+}
+
+Transmutation verificarPrimo(Solid n) -> Principle {
+    Observe (n < 2) {
+        EquivalentExchange Rejected
+    }
+    
+    Observe (n == 2) {
+        EquivalentExchange Accepted
+    }
+    
+    Solid divisor = 2
+    TransmuteUntil (divisor * divisor > n) {
+        Solid resto = n % divisor
+        
+        Observe (resto == 0) {
+            EquivalentExchange Rejected
+        }
+        
+        divisor = divisor + 1
+    }
+    
+    EquivalentExchange Accepted
+}

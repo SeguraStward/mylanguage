@@ -1,0 +1,6 @@
+// Test simple de array con literales
+
+Transmutation GateOfTruth() -> void {
+    AlchemicArray[Solid, 3] arr = [10, 20, 30]
+    Transmute("Prueba completada")
+}

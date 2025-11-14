@@ -1,0 +1,32 @@
+// Test: Diferencia entre Transmute y TransmuteLine
+Transmutation GateOfTruth() -> void {
+    TransmuteLine("=== TEST: Transmute vs TransmuteLine ===")
+    TransmuteLine("")
+    
+    // Transmute NO hace salto de linea
+    TransmuteLine("Usando Transmute (sin salto):")
+    Transmute("Hola ")
+    Transmute("Mundo ")
+    Transmute("en ")
+    Transmute("la ")
+    TransmuteLine("misma linea")
+    
+    TransmuteLine("")
+    
+    // TransmuteLine SI hace salto de linea
+    TransmuteLine("Usando TransmuteLine (con salto):")
+    TransmuteLine("Primera linea")
+    TransmuteLine("Segunda linea")
+    TransmuteLine("Tercera linea")
+    
+    TransmuteLine("")
+    
+    // Ejemplo combinado
+    TransmuteLine("Ejemplo combinado:")
+    Transmute("Nombre: ")
+    TransmuteLine("Alchemist")
+    Transmute("Edad: ")
+    TransmuteLine(25)
+    Transmute("Estado: ")
+    TransmuteLine(Accepted)
+}

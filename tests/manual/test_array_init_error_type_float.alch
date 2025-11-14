@@ -1,0 +1,8 @@
+// ERROR SEMÁNTICO: Tipo incorrecto - Int en array de Liquid
+
+Transmutation GateOfTruth() -> void {
+    // Error: Array de Liquid (float) pero se pasa un Solid (int)
+    AlchemicArray[Liquid, 3] precios = [19.99, 25, 30.50]
+    
+    Transmute("Este código no debería ejecutarse")
+}

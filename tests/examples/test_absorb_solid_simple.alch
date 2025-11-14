@@ -1,0 +1,9 @@
+// Test: AbsorbSolid con prompt personalizado
+Transmutation GateOfTruth() -> void {
+    TransmuteLine("=== TEST: AbsorbSolid ===")
+    
+    Solid edad = AbsorbSolid("Ingresa tu edad")
+    TransmuteLine("Edad ingresada: " + edad)
+    
+    TransmuteLine("=== TEST COMPLETADO ===")
+}

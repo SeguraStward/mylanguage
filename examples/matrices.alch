@@ -1,0 +1,65 @@
+// Ejemplo completo de uso de matrices en Alchemist
+Transmutation GateOfTruth() -> void {
+    Transmute("=== EJEMPLO DE MATRICES ALQUÍMICAS ===")
+    
+    // 1. Matriz de identidad 3x3
+    AlchemicMatrix[Solid, 3, 3] identidad
+    identidad[0][0] = 1
+    identidad[0][1] = 0
+    identidad[0][2] = 0
+    identidad[1][0] = 0
+    identidad[1][1] = 1
+    identidad[1][2] = 0
+    identidad[2][0] = 0
+    identidad[2][1] = 0
+    identidad[2][2] = 1
+    
+    Transmute("Matriz Identidad 3x3:")
+    Transmute(identidad[0][0])
+    Transmute(identidad[0][1])
+    Transmute(identidad[0][2])
+    Transmute(identidad[1][0])
+    Transmute(identidad[1][1])
+    Transmute(identidad[1][2])
+    Transmute(identidad[2][0])
+    Transmute(identidad[2][1])
+    Transmute(identidad[2][2])
+    
+    // 2. Matriz de datos (calificaciones)
+    AlchemicMatrix[Liquid, 2, 3] calificaciones
+    // Estudiante 1
+    calificaciones[0][0] = 85.5  // Matemáticas
+    calificaciones[0][1] = 90.0  // Física
+    calificaciones[0][2] = 88.5  // Química
+    // Estudiante 2
+    calificaciones[1][0] = 92.0
+    calificaciones[1][1] = 87.5
+    calificaciones[1][2] = 95.0
+    
+    Transmute("Calificaciones de estudiantes:")
+    Liquid promedio1 = (calificaciones[0][0] + calificaciones[0][1] + calificaciones[0][2]) / 3.0
+    Liquid promedio2 = (calificaciones[1][0] + calificaciones[1][1] + calificaciones[1][2]) / 3.0
+    
+    Transmute("Promedio Estudiante 1:")
+    Transmute(promedio1)
+    Transmute("Promedio Estudiante 2:")
+    Transmute(promedio2)
+    
+    // 3. Tabla de multiplicar 5x5
+    AlchemicMatrix[Solid, 5, 5] tabla_multiplicar
+    Solid i = 0
+    TransmuteUntil(i < 5) {
+        Solid j = 0
+        TransmuteUntil(j < 5) {
+            tabla_multiplicar[i][j] = (i + 1) * (j + 1)
+            j = j + 1
+        }
+        i = i + 1
+    }
+    
+    Transmute("Tabla de Multiplicar 5x5:")
+    Transmute("Elemento [2][3] (3 x 4):")
+    Transmute(tabla_multiplicar[2][3])
+    Transmute("Elemento [4][4] (5 x 5):")
+    Transmute(tabla_multiplicar[4][4])
+}

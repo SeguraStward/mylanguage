@@ -1,0 +1,63 @@
+// Test completo de Matrices - AlchemicMatrix
+Transmutation GateOfTruth() -> void {
+    Transmute("=== TEST DE MATRICES ===")
+    
+    // Test 1: Matriz 3x3 básica
+    AlchemicMatrix[Solid, 3, 3] matriz
+    
+    matriz[0][0] = 1
+    matriz[0][1] = 2
+    matriz[0][2] = 3
+    matriz[1][0] = 4
+    matriz[1][1] = 5
+    matriz[1][2] = 6
+    matriz[2][0] = 7
+    matriz[2][1] = 8
+    matriz[2][2] = 9
+    
+    Transmute("Matriz 3x3:")
+    Transmute(matriz[0][0])
+    Transmute(matriz[0][1])
+    Transmute(matriz[0][2])
+    Transmute(matriz[1][0])
+    Transmute(matriz[1][1])
+    Transmute(matriz[1][2])
+    Transmute(matriz[2][0])
+    Transmute(matriz[2][1])
+    Transmute(matriz[2][2])
+    
+    // Test 2: Matriz con ciclos anidados
+    AlchemicMatrix[Solid, 4, 4] tabla
+    
+    AlchemicCycle (Solid i = 0; i < 4; i = i + 1) {
+        AlchemicCycle (Solid j = 0; j < 4; j = j + 1) {
+            tabla[i][j] = i * 4 + j
+        }
+    }
+    
+    Transmute("Matriz 4x4 generada con ciclos:")
+    AlchemicCycle (Solid fila = 0; fila < 4; fila = fila + 1) {
+        AlchemicCycle (Solid col = 0; col < 4; col = col + 1) {
+            Transmute(tabla[fila][col])
+        }
+    }
+    
+    // Test 3: Matriz de strings
+    AlchemicMatrix[Inscription, 2, 3] palabras
+    palabras[0][0] = "Hola"
+    palabras[0][1] = "Mundo"
+    palabras[0][2] = "Alchemist"
+    palabras[1][0] = "Full"
+    palabras[1][1] = "Metal"
+    palabras[1][2] = "Alchemist"
+    
+    Transmute("Matriz de palabras:")
+    Transmute(palabras[0][0])
+    Transmute(palabras[0][1])
+    Transmute(palabras[0][2])
+    Transmute(palabras[1][0])
+    Transmute(palabras[1][1])
+    Transmute(palabras[1][2])
+    
+    Transmute("=== TEST COMPLETADO ===")
+}

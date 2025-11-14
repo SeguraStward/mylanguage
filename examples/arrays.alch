@@ -1,0 +1,40 @@
+Transmutation GateOfTruth() -> void {
+    // Declarar un array de 5 elementos tipo Solid (enteros)
+    AlchemicArray[Solid, 5] numeros
+    
+    // Asignar valores a los elementos del array
+    numeros[0] = 10
+    numeros[1] = 20
+    numeros[2] = 30
+    numeros[3] = 40
+    numeros[4] = 50
+    
+    // Mostrar los valores del array
+    Transmute("Array de numeros:")
+    Transmute(numeros[0])
+    Transmute(numeros[1])
+    Transmute(numeros[2])
+    Transmute(numeros[3])
+    Transmute(numeros[4])
+    
+    // Modificar un elemento
+    numeros[2] = 100
+    Transmute("Despues de modificar numeros[2]:")
+    Transmute(numeros[2])
+    
+    // Array de tipo Liquid (flotantes)
+    AlchemicArray[Liquid, 3] temperaturas
+    temperaturas[0] = 25.5
+    temperaturas[1] = 30.2
+    temperaturas[2] = 28.7
+    
+    Transmute("Temperaturas:")
+    Transmute(temperaturas[0])
+    Transmute(temperaturas[1])
+    Transmute(temperaturas[2])
+    
+    // Usar arrays en operaciones
+    Solid suma = numeros[0] + numeros[1]
+    Transmute("Suma de primeros dos elementos:")
+    Transmute(suma)
+}

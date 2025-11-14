@@ -1,0 +1,12 @@
+// Test: Validación de división por cero
+Transmutation GateOfTruth() -> void {
+    TransmuteLine("=== TEST: Division por Cero ===")
+    
+    Solid a = 10
+    Solid b = 0
+    
+    TransmuteLine("Intentando dividir 10 / 0...")
+    Solid resultado = a / b
+    
+    TransmuteLine("No deberia llegar aqui")
+}

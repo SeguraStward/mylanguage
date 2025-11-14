@@ -1,0 +1,8 @@
+// ERROR SEMÁNTICO: Expresión de tipo incorrecto
+
+Transmutation GateOfTruth() -> void {
+    // Error: Expresión booleana en array de Solid
+    AlchemicArray[Solid, 3] numeros = [10, (5 > 3), 30]
+    
+    Transmute("Este código no debería ejecutarse")
+}

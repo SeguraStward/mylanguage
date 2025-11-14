@@ -1,0 +1,8 @@
+// ERROR SINTÁCTICO: Coma al final sin valor
+
+Transmutation GateOfTruth() -> void {
+    // Error: Coma al final sin valor siguiente
+    AlchemicArray[Solid, 3] numeros = [10, 20, 30,]
+    
+    Transmute("Este código no debería ejecutarse")
+}

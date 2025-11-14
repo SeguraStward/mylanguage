@@ -1,0 +1,67 @@
+// Prueba: Inicialización exitosa de arrays con literales
+
+Transmutation GateOfTruth() -> void {
+    // Caso 1: Array de enteros con valores literales
+    AlchemicArray[Solid, 5] numeros = [10, 20, 30, 40, 50]
+    Observe(numeros[0] == 10) {
+        Transmute("✓ numeros[0] = 10")
+    }
+    Observe(numeros[4] == 50) {
+        Transmute("✓ numeros[4] = 50")
+    }
+    
+    // Caso 2: Array de flotantes con valores literales
+    AlchemicArray[Liquid, 3] precios = [19.99, 25.50, 100.0]
+    Observe(precios[0] == 19.99) {
+        Transmute("✓ precios[0] = 19.99")
+    }
+    Observe(precios[2] == 100.0) {
+        Transmute("✓ precios[2] = 100.0")
+    }
+    
+    // Caso 3: Array de strings con valores literales
+    AlchemicArray[Inscription, 4] nombres = ["Ana", "Bob", "Carlos", "Diana"]
+    Observe(nombres[1] == "Bob") {
+        Transmute("✓ nombres[1] = Bob")
+    }
+    
+    // Caso 4: Array de booleanos con valores literales
+    AlchemicArray[Principle, 3] flags = [Accepted, Rejected, Accepted]
+    Observe(flags[0] == Accepted) {
+        Transmute("✓ flags[0] = True")
+    }
+    Observe(flags[1] == Rejected) {
+        Transmute("✓ flags[1] = False")
+    }
+    
+    // Caso 5: Array con expresiones como valores
+    AlchemicArray[Solid, 4] calculados = [5 + 5, 10 * 2, 30 - 5, 40 / 2]
+    Observe(calculados[0] == 10) {
+        Transmute("✓ calculados[0] = 10")
+    }
+    Observe(calculados[1] == 20) {
+        Transmute("✓ calculados[1] = 20")
+    }
+    
+    // Caso 6: Array con variables como valores
+    Solid x = 100
+    Solid y = 200
+    AlchemicArray[Solid, 2] valores = [x, y]
+    Observe(valores[0] == 100) {
+        Transmute("✓ valores[0] = 100")
+    }
+    Observe(valores[1] == 200) {
+        Transmute("✓ valores[1] = 200")
+    }
+    
+    // Caso 7: Array sin inicialización (sintaxis antigua)
+    AlchemicArray[Solid, 3] vacio
+    Observe(vacio[0] == 0) {
+        Transmute("✓ vacio[0] = 0 (default)")
+    }
+    Observe(vacio[1] == 0) {
+        Transmute("✓ vacio[1] = 0 (default)")
+    }
+    
+    Transmute("=== TODAS LAS PRUEBAS EXITOSAS ===")
+}

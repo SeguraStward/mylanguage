@@ -1,0 +1,49 @@
+// Test completo de estructuras de control
+Transmutation GateOfTruth() -> void {
+    Transmute("=== TEST DE ESTRUCTURAS DE CONTROL ===")
+    
+    // Test 1: Observe simple
+    Solid x = 10
+    Observe (x > 5) {
+        Transmute("x es mayor que 5")
+    } Inevitably {
+        Transmute("x es menor o igual a 5")
+    }
+    
+    // Test 2: Observe con Alternatively
+    Solid nota = 85
+    Observe (nota >= 90) {
+        Transmute("Excelente")
+    } Alternatively (nota >= 80) {
+        Transmute("Muy bueno")
+    } Alternatively (nota >= 70) {
+        Transmute("Bueno")
+    } Inevitably {
+        Transmute("Necesita mejorar")
+    }
+    
+    // Test 3: TransmuteUntil (while)
+    Solid contador = 0
+    Transmute("Contando del 0 al 4:")
+    TransmuteUntil (contador < 5) {
+        Transmute(contador)
+        contador = contador + 1
+    }
+    
+    // Test 4: AlchemicCycle (for)
+    Transmute("Tabla del 5:")
+    AlchemicCycle (Solid i = 1; i <= 10; i = i + 1) {
+        Solid resultado = 5 * i
+        Transmute("5 x " + i + " = " + resultado)
+    }
+    
+    // Test 5: Ciclos anidados
+    Transmute("Patron de asteriscos:")
+    AlchemicCycle (Solid fila = 1; fila <= 5; fila = fila + 1) {
+        AlchemicCycle (Solid col = 1; col <= fila; col = col + 1) {
+            Transmute("*")
+        }
+    }
+    
+    Transmute("=== TEST COMPLETADO ===")
+}

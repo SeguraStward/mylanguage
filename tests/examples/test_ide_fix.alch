@@ -1,0 +1,5 @@
+// Test 2: Imprimir número 100 (modificado)
+Transmutation GateOfTruth() -> void {
+    Solid numero = 100
+    TransmuteLine(numero)
+}

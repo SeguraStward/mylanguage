@@ -1,0 +1,45 @@
+// Test de tipos de datos
+Transmutation GateOfTruth() -> void {
+    Transmute("=== TEST DE TIPOS DE DATOS ===")
+    
+    // Test 1: Solid (entero)
+    Solid entero = 42
+    Transmute("Solid (entero): " + entero)
+    Solid negativo = -100
+    Transmute("Solid negativo: " + negativo)
+    
+    // Test 2: Liquid (flotante)
+    Liquid flotante = 3.14159
+    Transmute("Liquid (flotante): " + flotante)
+    Liquid liquidNegativo = -2.5
+    Transmute("Liquid negativo: " + liquidNegativo)
+    
+    // Test 3: Inscription (string)
+    Inscription texto = "Fullmetal Alchemist"
+    Transmute("Inscription (string): " + texto)
+    Inscription vacio = ""
+    Transmute("Inscription vacio: '" + vacio + "'")
+    
+    // Test 4: Principle (booleano)
+    Principle verdadero = Accepted
+    Transmute("Principle verdadero: " + verdadero)
+    Principle falso = Rejected
+    Transmute("Principle falso: " + falso)
+    
+    // Test 5: Conversión implícita en concatenación
+    Solid num = 100
+    Inscription mensaje = "El numero es: " + num
+    Transmute(mensaje)
+    
+    Liquid decimal = 99.99
+    Inscription precio = "Precio: $" + decimal
+    Transmute(precio)
+    
+    // Test 6: Operaciones mixtas Solid y Liquid
+    Solid int1 = 10
+    Liquid float1 = 5.5
+    Liquid resultado = int1 + float1
+    Transmute("10 + 5.5 = " + resultado)
+    
+    Transmute("=== TEST COMPLETADO ===")
+}

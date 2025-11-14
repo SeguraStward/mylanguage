@@ -1,0 +1,8 @@
+// ERROR SEMÁNTICO: Lista vacía cuando se esperan valores
+
+Transmutation GateOfTruth() -> void {
+    // Error: Array de tamaño 5 pero lista vacía
+    AlchemicArray[Solid, 5] numeros = []
+    
+    Transmute("Este código no debería ejecutarse")
+}

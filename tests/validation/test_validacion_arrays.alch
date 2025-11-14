@@ -1,0 +1,21 @@
+// Test: Validación de tipos en arrays
+Transmutation GateOfTruth() -> void {
+    TransmuteLine("=== TEST: Validacion de Arrays ===")
+    
+    // Test 1: Validación de tipo de elementos (debe compilar bien)
+    AlchemicArray[Solid, 5] numeros
+    numeros[0] = 10
+    numeros[1] = 20
+    TransmuteLine("Array Solid: OK")
+    
+    // Test 2: Validación de índices (debe compilar bien)
+    Solid indice = 2
+    numeros[indice] = 30
+    TransmuteLine("Indice Solid: OK")
+    
+    // Test 3: Acceso dentro de rango
+    Solid valor = numeros[0]
+    TransmuteLine("Acceso en rango: " + valor)
+    
+    TransmuteLine("=== TODOS LOS TESTS PASARON ===")
+}

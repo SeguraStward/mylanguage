@@ -1,0 +1,36 @@
+// Ejemplo de programa Alchemist
+// Calculadora simple con modo oscuro
+
+Transmutation GateOfTruth() -> void {
+    TransmuteLine("=== CALCULADORA ALCHEMIST ===")
+    TransmuteLine("")
+    
+    Solid a = AbsorbSolid("Ingresa primer número: ")
+    Solid b = AbsorbSolid("Ingresa segundo número: ")
+    
+    TransmuteLine("")
+    TransmuteLine("RESULTADOS:")
+    
+    Solid suma = a + b
+    Transmute("Suma: ")
+    TransmuteLine(suma)
+    
+    Solid resta = a - b
+    Transmute("Resta: ")
+    TransmuteLine(resta)
+    
+    Solid producto = a * b
+    Transmute("Multiplicación: ")
+    TransmuteLine(producto)
+    
+    Observe (b != 0) {
+        Solid division = a / b
+        Transmute("División: ")
+        TransmuteLine(division)
+    } Inevitably {
+        TransmuteLine("División: No se puede dividir por 0")
+    }
+    
+    TransmuteLine("")
+    TransmuteLine("=== FIN DEL PROGRAMA ===")
+}

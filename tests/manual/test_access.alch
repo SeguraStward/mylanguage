@@ -1,0 +1,7 @@
+// Test acceso inmediato
+
+Transmutation GateOfTruth() -> void {
+    AlchemicArray[Solid, 2] arr
+    Solid x = arr[0]
+    Transmute("Acceso completado")
+}

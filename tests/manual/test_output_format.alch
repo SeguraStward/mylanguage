@@ -1,0 +1,86 @@
+// Test: Verificar formato de salida de Principle y Emptiness
+
+Transmutation GateOfTruth() -> void {
+    TransmuteLine("=== Test de Formato de Salida ===")
+    TransmuteLine("")
+    
+    // Test 1: Imprimir valores Principle
+    TransmuteLine("--- Test 1: Valores Principle ---")
+    Principle verdadero = Accepted
+    Principle falso = Rejected
+    
+    Transmute("verdadero = ")
+    TransmuteLine(verdadero)  // Debe imprimir: Accepted
+    
+    Transmute("falso = ")
+    TransmuteLine(falso)  // Debe imprimir: Rejected
+    
+    // Test 2: Imprimir resultado de comparaciones
+    TransmuteLine("")
+    TransmuteLine("--- Test 2: Comparaciones ---")
+    Solid x = 10
+    Solid y = 20
+    
+    Transmute("x < y: ")
+    TransmuteLine(x < y)  // Debe imprimir: Accepted
+    
+    Transmute("x > y: ")
+    TransmuteLine(x > y)  // Debe imprimir: Rejected
+    
+    Transmute("x == y: ")
+    TransmuteLine(x == y)  // Debe imprimir: Rejected
+    
+    // Test 3: Operaciones lógicas
+    TransmuteLine("")
+    TransmuteLine("--- Test 3: Operaciones Lógicas ---")
+    Principle a = Accepted
+    Principle b = Rejected
+    
+    Transmute("Accepted and Rejected: ")
+    TransmuteLine(a and b)  // Debe imprimir: Rejected
+    
+    Transmute("Accepted or Rejected: ")
+    TransmuteLine(a or b)  // Debe imprimir: Accepted
+    
+    Transmute("not Accepted: ")
+    TransmuteLine(not a)  // Debe imprimir: Rejected
+    
+    // Test 4: Emptiness
+    TransmuteLine("")
+    TransmuteLine("--- Test 4: Emptiness ---")
+    Solid vacio = Emptiness
+    
+    Transmute("vacio = ")
+    TransmuteLine(vacio)  // Debe imprimir: Emptiness
+    
+    Observe (vacio == Emptiness) {
+        TransmuteLine("vacio es Emptiness: Accepted")
+    }
+    
+    // Test 5: Mix de tipos
+    TransmuteLine("")
+    TransmuteLine("--- Test 5: Mix de Tipos ---")
+    Solid numero = 42
+    Liquid decimal = 3.14
+    Inscription texto = "Hola"
+    Principle booleano = Accepted
+    Solid nulo = Emptiness
+    
+    Transmute("numero: ")
+    TransmuteLine(numero)
+    
+    Transmute("decimal: ")
+    TransmuteLine(decimal)
+    
+    Transmute("texto: ")
+    TransmuteLine(texto)
+    
+    Transmute("booleano: ")
+    TransmuteLine(booleano)
+    
+    Transmute("nulo: ")
+    TransmuteLine(nulo)
+    
+    TransmuteLine("")
+    TransmuteLine("=== Test Completado ===")
+}

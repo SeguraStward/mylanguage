@@ -1,0 +1,14 @@
+// Test: Validación de entrada con AbsorbSolid
+Transmutation GateOfTruth() -> void {
+    TransmuteLine("=== TEST: Validacion de Entrada ===")
+    
+    // Este test requiere entrada del usuario
+    // Si se ingresa texto inválido, debe generar error
+    Solid numero = AbsorbSolid("Ingresa un numero entero:")
+    TransmuteLine("Numero ingresado: " + numero)
+    
+    Liquid decimal = AbsorbLiquid("Ingresa un decimal:")
+    TransmuteLine("Decimal ingresado: " + decimal)
+    
+    TransmuteLine("=== TEST COMPLETADO ===")
+}

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import tkinter as tk
-from tkinter import scrolledtext, messagebox, font
+from tkinter import scrolledtext, messagebox, font, simpledialog
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.compiler import AlchemistCompiler
@@ -43,6 +43,8 @@ class AlchemistIDESimple:
         menu_frame = tk.Frame(self.root, bg=self.bg_dark, height=30)
         menu_frame.pack(fill=tk.X, padx=5, pady=5)
         tk.Button(menu_frame, text="Nuevo", command=self.nuevo, bg=self.button_bg, fg=self.button_fg, 
+                 activebackground=self.button_active, relief=tk.FLAT, padx=10, font=('Arial', 9)).pack(side=tk.LEFT, padx=2)
+        tk.Button(menu_frame, text="Plantillas", command=self.mostrar_plantillas, bg=self.button_bg, fg=self.button_fg,
                  activebackground=self.button_active, relief=tk.FLAT, padx=10, font=('Arial', 9)).pack(side=tk.LEFT, padx=2)
         tk.Button(menu_frame, text="Opciones", command=self.opciones, bg=self.button_bg, fg=self.button_fg,
                  activebackground=self.button_active, relief=tk.FLAT, padx=10, font=('Arial', 9)).pack(side=tk.LEFT, padx=2)
@@ -157,6 +159,68 @@ class AlchemistIDESimple:
             self.update_line_numbers()
             # Invalidar compilación al crear nuevo archivo
             self.compilation_result = None
+
+    def mostrar_plantillas(self):
+        """Muestra ventana con plantillas de código para insertar rápidamente"""
+        win = tk.Toplevel(self.root)
+        win.title("Plantillas de Código")
+        win.geometry("700x600")
+        win.configure(bg=self.bg_dark)
+        win.transient(self.root)
+        
+        tk.Label(win, text="Plantillas de Código Rápido", font=('Arial', 14, 'bold'), 
+                bg=self.bg_dark, fg=self.fg_light).pack(pady=15)
+        
+        tk.Label(win, text="Haz clic en cualquier plantilla para insertarla en el editor", 
+                font=('Arial', 9), bg=self.bg_dark, fg=self.line_number_fg).pack(pady=5)
+        
+        # Frame con scroll para las plantillas
+        canvas = tk.Canvas(win, bg=self.bg_dark, highlightthickness=0)
+        scrollbar = tk.Scrollbar(win, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=self.bg_dark)
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side="left", fill="both", expand=True, padx=20, pady=10)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Definir plantillas
+        plantillas = [
+            ("Programa Principal", self.insertar_main),
+            ("Condicional Simple", self.insertar_if_simple),
+            ("Condicional con Else", self.insertar_if_else),
+            ("Ciclo While", self.insertar_while),
+            ("Ciclo For", self.insertar_for),
+            ("Función con Retorno", self.insertar_funcion),
+            ("Función Void", self.insertar_funcion_void),
+            ("Array", self.insertar_array),
+            ("Matriz", self.insertar_matriz),
+            ("Entrada de Datos", self.insertar_input),
+            ("Salida de Datos", self.insertar_output),
+        ]
+        
+        for i, (nombre, comando) in enumerate(plantillas):
+            btn = tk.Button(scrollable_frame, text=f"📄 {nombre}", command=lambda c=comando, w=win: self.ejecutar_plantilla(c, w),
+                          bg=self.button_bg, fg=self.button_fg, activebackground=self.button_active,
+                          font=('Arial', 10), relief=tk.SOLID, bd=1, padx=20, pady=10, anchor='w')
+            btn.pack(fill=tk.X, pady=5, padx=10)
+        
+        # Botón cerrar
+        tk.Button(win, text="Cerrar", command=win.destroy,
+                 bg=self.button_bg, fg=self.button_fg, activebackground=self.button_active,
+                 font=('Arial', 10), relief=tk.SOLID, bd=1, padx=20, pady=8).pack(pady=10)
+
+    def ejecutar_plantilla(self, comando, ventana):
+        """Ejecuta el comando de plantilla y cierra la ventana"""
+        comando()
+        ventana.destroy()
+        messagebox.showinfo("Plantilla Insertada", "El código ha sido insertado en el editor")
 
     def opciones(self):
         """Menú principal de opciones"""
@@ -835,28 +899,40 @@ Transmutation GateOfTruth() -> void {
             self.show_output("👉 Presione COMPILAR antes de ejecutar\n")
             return
         
-        # Detectar si el código usa funciones de entrada
-        codigo = self.code_editor.get('1.0', tk.END)
-        usa_input = any(palabra in codigo for palabra in ['Absorb', 'AbsorbSolid', 'AbsorbLiquid', 'AbsorbPrinciple'])
-        
-        input_data = None
-        if usa_input:
-            # Preguntar al usuario si quiere proporcionar datos de entrada
-            respuesta = messagebox.askyesno(
-                "Entrada de Datos",
-                "Este programa requiere entrada de datos.\n\n¿Desea proporcionar los datos ahora?\n\n" +
-                "Nota: Debe ingresar los datos en el orden que el programa los solicita."
-            )
-            
-            if respuesta:
-                input_data = self.solicitar_datos_entrada()
-                if input_data is None:  # Usuario canceló
-                    return
-            
         self.show_output("\n=== EJECUTANDO ===\n\n")
         
         try:
-            result = self.compiler.execute(self.compilation_result, input_data)
+            # Crear callback para entrada interactiva
+            def input_callback(prompt, tipo):
+                """Muestra un diálogo simple para solicitar entrada"""
+                if tipo == "text":
+                    return simpledialog.askstring("Entrada", prompt, parent=self.root)
+                elif tipo == "int":
+                    while True:
+                        valor = simpledialog.askstring("Entrada", prompt, parent=self.root)
+                        if valor is None:  # Usuario canceló
+                            return "0"
+                        try:
+                            int(valor)
+                            return valor
+                        except ValueError:
+                            messagebox.showerror("Error", f"'{valor}' no es un número entero válido")
+                elif tipo == "float":
+                    while True:
+                        valor = simpledialog.askstring("Entrada", prompt, parent=self.root)
+                        if valor is None:  # Usuario canceló
+                            return "0.0"
+                        try:
+                            float(valor)
+                            return valor
+                        except ValueError:
+                            messagebox.showerror("Error", f"'{valor}' no es un número decimal válido")
+                elif tipo == "bool":
+                    return simpledialog.askstring("Entrada", prompt, parent=self.root)
+                else:
+                    return simpledialog.askstring("Entrada", prompt, parent=self.root)
+            
+            result = self.compiler.execute(self.compilation_result, input_callback=input_callback)
             
             if result.success:
                 # Mostrar salida del programa
@@ -898,67 +974,6 @@ Transmutation GateOfTruth() -> void {
             self.show_output(f"❌ ERROR INESPERADO:\n")
             self.show_output(f"  Tipo: {type(e).__name__}\n")
             self.show_output(f"  Mensaje: {str(e)}\n")
-    
-    def solicitar_datos_entrada(self):
-        """Ventana para ingresar múltiples líneas de entrada"""
-        input_win = tk.Toplevel(self.root)
-        input_win.title("Datos de Entrada")
-        input_win.geometry("600x400")
-        input_win.configure(bg=self.bg_dark)
-        input_win.transient(self.root)
-        input_win.grab_set()
-        
-        tk.Label(input_win, text="Ingrese los datos de entrada (una línea por cada Absorb)", 
-                font=('Arial', 11, 'bold'), bg=self.bg_dark, fg=self.fg_light).pack(pady=10)
-        
-        tk.Label(input_win, text="Ejemplo: Si el programa pide nombre, edad y altura, ingrese:\n" +
-                                 "  Edward Elric\n  25\n  1.75", 
-                font=('Arial', 9), bg=self.bg_dark, fg=self.line_number_fg, 
-                justify=tk.LEFT).pack(pady=5)
-        
-        frame = tk.Frame(input_win, bg=self.bg_dark)
-        frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
-        
-        input_text = scrolledtext.ScrolledText(frame, font=('Courier', 10), 
-                                               bg=self.editor_bg, fg=self.editor_fg,
-                                               relief=tk.SOLID, bd=1, padx=10, pady=10)
-        input_text.pack(fill=tk.BOTH, expand=True)
-        
-        datos_resultado = []
-        
-        def aceptar():
-            contenido = input_text.get('1.0', tk.END).strip()
-            if contenido:
-                # Dividir por líneas
-                datos_resultado.extend(contenido.split('\n'))
-            input_win.destroy()
-        
-        def cancelar():
-            datos_resultado.clear()
-            datos_resultado.append(None)  # Señal de cancelación
-            input_win.destroy()
-        
-        btn_frame = tk.Frame(input_win, bg=self.bg_dark)
-        btn_frame.pack(fill=tk.X, padx=20, pady=10)
-        
-        tk.Button(btn_frame, text="✅ Aceptar", command=aceptar,
-                 bg='#0e639c', fg='white', activebackground='#1177bb',
-                 font=('Arial', 10, 'bold'), relief=tk.SOLID, bd=1,
-                 padx=20, pady=8).pack(side=tk.LEFT, expand=True, padx=5)
-        
-        tk.Button(btn_frame, text="❌ Cancelar", command=cancelar,
-                 bg=self.button_bg, fg=self.button_fg, activebackground=self.button_active,
-                 font=('Arial', 10), relief=tk.SOLID, bd=1,
-                 padx=20, pady=8).pack(side=tk.RIGHT, expand=True, padx=5)
-        
-        # Esperar a que se cierre la ventana
-        self.root.wait_window(input_win)
-        
-        # Si se canceló, retornar None
-        if datos_resultado and datos_resultado[0] is None:
-            return None
-        
-        return datos_resultado if datos_resultado else []
             
     def levenshtein_distance(self, s1, s2):
         """Calcula la distancia de Levenshtein entre dos cadenas"""
@@ -1042,6 +1057,125 @@ Transmutation GateOfTruth() -> void {
         self.output_text.config(state=tk.NORMAL)
         self.output_text.delete('1.0', tk.END)
         self.output_text.config(state=tk.DISABLED)
+    
+    # ========== MÉTODOS PARA INSERTAR PLANTILLAS ==========
+    
+    def insertar_main(self):
+        """Inserta plantilla de programa principal"""
+        codigo = """// Programa principal
+Transmutation GateOfTruth() -> void {
+    TransmuteLine("Hola Mundo desde Alchemist!")
+    
+}
+"""
+        self.code_editor.insert(tk.INSERT, codigo)
+        self.update_line_numbers()
+    
+    def insertar_if_simple(self):
+        """Inserta plantilla de condicional simple"""
+        codigo = """Reaction (condicion) {
+    // código si verdadero
+}
+"""
+        self.code_editor.insert(tk.INSERT, codigo)
+        self.update_line_numbers()
+    
+    def insertar_if_else(self):
+        """Inserta plantilla de condicional con else"""
+        codigo = """Reaction (condicion) {
+    // código si verdadero
+} Dissolve {
+    // código si falso
+}
+"""
+        self.code_editor.insert(tk.INSERT, codigo)
+        self.update_line_numbers()
+    
+    def insertar_while(self):
+        """Inserta plantilla de ciclo while"""
+        codigo = """Cycle (condicion) {
+    // código del ciclo
+}
+"""
+        self.code_editor.insert(tk.INSERT, codigo)
+        self.update_line_numbers()
+    
+    def insertar_for(self):
+        """Inserta plantilla de ciclo for"""
+        codigo = """Iterate(Solid i = 0; i < 10; i = i + 1) {
+    // código del ciclo
+}
+"""
+        self.code_editor.insert(tk.INSERT, codigo)
+        self.update_line_numbers()
+    
+    def insertar_funcion(self):
+        """Inserta plantilla de función con retorno"""
+        codigo = """Transmutation nombre_funcion(Solid parametro) -> Solid {
+    // código de la función
+    EquivalentExchange resultado
+}
+"""
+        self.code_editor.insert(tk.INSERT, codigo)
+        self.update_line_numbers()
+    
+    def insertar_funcion_void(self):
+        """Inserta plantilla de función void"""
+        codigo = """Transmutation nombre_funcion(Solid parametro) -> void {
+    // código de la función
+}
+"""
+        self.code_editor.insert(tk.INSERT, codigo)
+        self.update_line_numbers()
+    
+    def insertar_array(self):
+        """Inserta plantilla de array"""
+        codigo = """// Declarar array
+AlchemicArray[Solid, 5] numeros
+
+// Asignar valores
+numeros[0] = 10
+numeros[1] = 20
+
+// Leer valores
+Solid valor = numeros[0]
+"""
+        self.code_editor.insert(tk.INSERT, codigo)
+        self.update_line_numbers()
+    
+    def insertar_matriz(self):
+        """Inserta plantilla de matriz"""
+        codigo = """// Declarar matriz 3x3
+AlchemicMatrix[Solid, 3, 3] matriz
+
+// Asignar valores
+matriz[0][0] = 1
+matriz[0][1] = 2
+
+// Leer valores
+Solid valor = matriz[0][0]
+"""
+        self.code_editor.insert(tk.INSERT, codigo)
+        self.update_line_numbers()
+    
+    def insertar_input(self):
+        """Inserta plantilla de entrada de datos"""
+        codigo = """// Entrada de datos
+Inscription nombre = Absorb("Ingresa tu nombre")
+Solid edad = AbsorbSolid("Ingresa tu edad")
+Liquid altura = AbsorbLiquid("Ingresa tu altura")
+"""
+        self.code_editor.insert(tk.INSERT, codigo)
+        self.update_line_numbers()
+    
+    def insertar_output(self):
+        """Inserta plantilla de salida de datos"""
+        codigo = """// Salida de datos
+Transmute("Texto sin salto de linea")
+TransmuteLine("Texto con salto de linea")
+"""
+        self.code_editor.insert(tk.INSERT, codigo)
+        self.update_line_numbers()
         
     def run(self):
         self.root.mainloop()

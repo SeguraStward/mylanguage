@@ -1,0 +1,31 @@
+// Test: Ejemplo de Tipos de Datos del IDE
+Transmutation GateOfTruth() -> void {
+    // Tipos simples
+    Solid entero = 42
+    Liquid decimal = 3.14
+    Inscription texto = "Alchemist"
+    Principle booleano = Accepted
+    Liquid nulo = Emptiness
+    
+    TransmuteLine("Entero: " + entero)
+    TransmuteLine("Decimal: " + decimal)
+    TransmuteLine("Texto: " + texto)
+    TransmuteLine("Booleano: " + booleano)
+    
+    // Arrays
+    AlchemicArray[Solid, 5] numeros
+    numeros[0] = 10
+    numeros[1] = 20
+    numeros[2] = 30
+    
+    TransmuteLine("Primer numero: " + numeros[0])
+    
+    // Matrices
+    AlchemicMatrix[Solid, 2, 2] matriz
+    matriz[0][0] = 1
+    matriz[0][1] = 2
+    matriz[1][0] = 3
+    matriz[1][1] = 4
+    
+    TransmuteLine("Elemento [1][1]: " + matriz[1][1])
+}

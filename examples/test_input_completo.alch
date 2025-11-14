@@ -1,0 +1,44 @@
+// Ejemplo completo de funciones de entrada
+Transmutation GateOfTruth() -> void {
+    Transmute("=== Prueba de Funciones de Entrada ===")
+    Transmute("")
+
+    Transmute("1. Ingresa tu nombre:")
+    Inscription nombre = Absorb()
+    Transmute("   Tu nombre es: ")
+    Transmute(nombre)
+    Transmute("")
+
+    Transmute("2. Ingresa tu edad:")
+    Solid edad = AbsorbSolid()
+    Transmute("   Tu edad es: ")
+    Transmute(edad)
+    Transmute("")
+
+    Transmute("3. Ingresa tu altura en metros (ej: 1.75):")
+    Liquid altura = AbsorbLiquid()
+    Transmute("   Tu altura es: ")
+    Transmute(altura)
+    Transmute("")
+
+    Transmute("4. ¿Confirmas los datos? (escribe algo para confirmar, Enter para cancelar):")
+    Principle confirmado = AbsorbPrinciple()
+    Transmute("   Confirmado: ")
+    Transmute(confirmado)
+    Transmute("")
+
+    Observe(confirmado == Accepted) {
+        Transmute("=== Resumen ===")
+        Transmute("Nombre: ")
+        Transmute(nombre)
+        Transmute("Edad: ")
+        Transmute(edad)
+        Transmute("Altura: ")
+        Transmute(altura)
+        Transmute("✓ Datos confirmados")
+    }
+    
+    Observe(confirmado == Rejected) {
+        Transmute("✗ Datos no confirmados. Operación cancelada.")
+    }
+}

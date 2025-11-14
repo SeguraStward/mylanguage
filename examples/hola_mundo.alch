@@ -1,0 +1,40 @@
+// Ejemplo Simple - Hola Mundo con Variables
+// Este es tu primer programa en Alchemist!
+
+Transmutation GateOfTruth() -> void {
+    // Bienvenida
+    Transmute("¡Bienvenido a Alchemist!")
+    Transmute("")
+    
+    // Variables de diferentes tipos
+    Solid edad = 25
+    Liquid altura = 1.75
+    Inscription nombre = "Edward Elric"
+    Principle esAlquimista = Accepted
+    
+    // Mostrar información
+    Transmute("Nombre: ")
+    Transmute(nombre)
+    
+    Transmute("Edad: ")
+    Transmute(edad)
+    
+    Transmute("Altura: ")
+    Transmute(altura)
+    
+    // Condicional simple
+    Observe (esAlquimista) {
+        Transmute("Es un alquimista certificado")
+    } Inevitably {
+        Transmute("No es alquimista")
+    }
+    
+    // Operaciones aritméticas
+    Solid suma = edad + 10
+    Transmute("")
+    Transmute("En 10 años tendrá: ")
+    Transmute(suma)
+    
+    Transmute("")
+    Transmute("¡Programa completado!")
+}

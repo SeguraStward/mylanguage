@@ -1,0 +1,8 @@
+// Test: Validación de rangos en arrays (debe fallar en runtime)
+Transmutation GateOfTruth() -> void {
+    AlchemicArray[Solid, 5] numeros
+    numeros[0] = 10
+    
+    // Este acceso debe generar error: índice fuera de rango
+    Solid valor = numeros[10]
+}

@@ -1,0 +1,56 @@
+// Test completo de Arrays - AlchemicArray
+Transmutation GateOfTruth() -> void {
+    Transmute("=== TEST DE ARRAYS ===")
+    
+    // Test 1: Declaración y asignación básica
+    AlchemicArray[Solid, 5] numeros
+    numeros[0] = 10
+    numeros[1] = 20
+    numeros[2] = 30
+    numeros[3] = 40
+    numeros[4] = 50
+    
+    Transmute("Array de numeros:")
+    Transmute(numeros[0])
+    Transmute(numeros[1])
+    Transmute(numeros[2])
+    Transmute(numeros[3])
+    Transmute(numeros[4])
+    
+    // Test 2: Array de strings
+    AlchemicArray[Inscription, 3] nombres
+    nombres[0] = "Edward"
+    nombres[1] = "Alphonse"
+    nombres[2] = "Winry"
+    
+    Transmute("Array de nombres:")
+    Transmute(nombres[0])
+    Transmute(nombres[1])
+    Transmute(nombres[2])
+    
+    // Test 3: Array en ciclo
+    AlchemicArray[Solid, 10] cuadrados
+    AlchemicCycle (Solid i = 0; i < 10; i = i + 1) {
+        cuadrados[i] = i * i
+    }
+    
+    Transmute("Cuadrados del 0 al 9:")
+    AlchemicCycle (Solid j = 0; j < 10; j = j + 1) {
+        Transmute(cuadrados[j])
+    }
+    
+    // Test 4: Array de booleanos
+    AlchemicArray[Principle, 4] flags
+    flags[0] = Accepted
+    flags[1] = Rejected
+    flags[2] = Accepted
+    flags[3] = Accepted
+    
+    Transmute("Flags booleanos:")
+    Transmute(flags[0])
+    Transmute(flags[1])
+    Transmute(flags[2])
+    Transmute(flags[3])
+    
+    Transmute("=== TEST COMPLETADO ===")
+}

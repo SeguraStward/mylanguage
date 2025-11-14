@@ -1,0 +1,12 @@
+// Test de índices negativos en arrays (debe fallar)
+Transmutation GateOfTruth() -> void {
+    Transmute("=== TEST DE INDICES NEGATIVOS ===")
+    
+    AlchemicArray[Solid, 10] numeros
+    numeros[0] = 100
+    
+    // Este acceso debería causar error: índice negativo no permitido
+    Transmute("Intentando acceder a indice -1:")
+    Solid valor = numeros[-1]
+    Transmute("Si ves esto, el test FALLO")
+}

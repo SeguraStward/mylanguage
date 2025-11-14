@@ -1,0 +1,17 @@
+// Test de validación de recursión infinita
+// Este programa debe detectar recursión infinita y detener la ejecución
+
+Transmutation RecursionInfinita(Solid n) -> Solid {
+    // Esta función se llama a sí misma infinitamente
+    EquivalentExchange RecursionInfinita(n + 1)
+}
+
+Transmutation GateOfTruth() -> void {
+    Transmute("=== TEST DE RECURSION INFINITA ===")
+    Transmute("Este test debe fallar con error de límite de recursión")
+    
+    Solid resultado = RecursionInfinita(0)
+    Transmute("Resultado: " + resultado)
+    
+    Transmute("Si ves esto, la validación NO funcionó")
+}

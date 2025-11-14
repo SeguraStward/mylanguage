@@ -1,0 +1,37 @@
+// Test de TransmuteLine y Emptiness
+
+Transmutation GateOfTruth() -> void {
+    Transmute("=== TEST DE TRANSMUTELINE Y EMPTINESS ===")
+    
+    // Test de TransmuteLine (con salto de línea)
+    TransmuteLine("")
+    TransmuteLine("Primera línea")
+    TransmuteLine("Segunda línea")
+    TransmuteLine("Tercera línea")
+    
+    // Test de Emptiness
+    Solid x = Emptiness
+    Inscription texto = Emptiness
+    
+    Observe (x == Emptiness) {
+        TransmuteLine("x es Emptiness (correcto)")
+    }
+    
+    Observe (texto == Emptiness) {
+        TransmuteLine("texto es Emptiness (correcto)")
+    }
+    
+    // Asignar valores y verificar que ya no son Emptiness
+    x = 42
+    texto = "Hola"
+    
+    Observe (x != Emptiness) {
+        TransmuteLine("x ya no es Emptiness (correcto)")
+    }
+    
+    Observe (texto != Emptiness) {
+        TransmuteLine("texto ya no es Emptiness (correcto)")
+    }
+    
+    TransmuteLine("=== TEST COMPLETADO ===")
+}

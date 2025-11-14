@@ -1,0 +1,8 @@
+// ERROR SEMÁNTICO: Cantidad incorrecta de valores iniciales
+
+Transmutation GateOfTruth() -> void {
+    // Error: Array de tamaño 5 pero solo 3 valores
+    AlchemicArray[Solid, 5] numeros = [10, 20, 30]
+    
+    Transmute("Este código no debería ejecutarse")
+}

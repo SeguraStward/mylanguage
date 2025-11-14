@@ -1,0 +1,74 @@
+// Ejemplo Completo - Calculadora de Números Primos
+// Demuestra las capacidades completas del lenguaje Alchemist
+
+Transmutation esPrimo(Solid numero) -> Principle {
+    // Verifica si un número es primo
+    Observe (numero < 2) {
+        EquivalentExchange Rejected
+    }
+    
+    Observe (numero == 2) {
+        EquivalentExchange Accepted
+    }
+    
+    Solid divisor = 2
+    TransmuteUntil (divisor * divisor > numero) {
+        Observe (numero % divisor == 0) {
+            EquivalentExchange Rejected
+        }
+        divisor = divisor + 1
+    }
+    
+    EquivalentExchange Accepted
+}
+
+Transmutation contarPrimos(Solid limite) -> Solid {
+    // Cuenta cuántos números primos hay hasta el límite
+    Solid contador = 0
+    Solid numero = 2
+    
+    TransmuteUntil (numero <= limite) {
+        Observe (esPrimo(numero)) {
+            contador = contador + 1
+        }
+        numero = numero + 1
+    }
+    
+    EquivalentExchange contador
+}
+
+Transmutation mostrarPrimos(Solid limite) -> void {
+    // Muestra todos los números primos hasta el límite
+    Transmute("Números primos hasta ")
+    Transmute(limite)
+    Transmute(":")
+    
+    AlchemicCycle (Solid num = 2; num <= limite; num = num + 1) {
+        Observe (esPrimo(num)) {
+            Transmute(num)
+        }
+    }
+}
+
+Transmutation GateOfTruth() -> void {
+    Transmute("=================================")
+    Transmute("  CALCULADORA DE NÚMEROS PRIMOS")
+    Transmute("=================================")
+    Transmute("")
+    
+    Solid limite = 50
+    
+    // Mostrar todos los primos
+    mostrarPrimos(limite)
+    
+    Transmute("")
+    Transmute("---")
+    
+    // Contar los primos
+    Solid total = contarPrimos(limite)
+    Transmute("Total de números primos encontrados: ")
+    Transmute(total)
+    
+    Transmute("")
+    Transmute("=================================")
+}

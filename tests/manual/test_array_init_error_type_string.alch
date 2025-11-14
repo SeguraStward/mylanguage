@@ -1,0 +1,8 @@
+// ERROR SEMÁNTICO: Tipo incorrecto - Boolean en array de Inscription
+
+Transmutation GateOfTruth() -> void {
+    // Error: Array de Inscription (string) pero se pasa un Principle (bool)
+    AlchemicArray[Inscription, 3] nombres = ["Ana", Accepted, "Carlos"]
+    
+    Transmute("Este código no debería ejecutarse")
+}

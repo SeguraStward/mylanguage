@@ -1,0 +1,23 @@
+// Test: Validación de matrices
+Transmutation GateOfTruth() -> void {
+    TransmuteLine("=== TEST: Validacion de Matrices ===")
+    
+    // Test 1: Declaración y asignación correcta
+    AlchemicMatrix[Solid, 3, 3] matriz
+    matriz[0][0] = 1
+    matriz[1][1] = 5
+    matriz[2][2] = 9
+    TransmuteLine("Matriz 3x3: OK")
+    
+    // Test 2: Acceso con índices válidos
+    Solid valor = matriz[1][1]
+    TransmuteLine("Acceso [1][1]: " + valor)
+    
+    // Test 3: Índices de tipo Solid
+    Solid fila = 0
+    Solid columna = 0
+    matriz[fila][columna] = 10
+    TransmuteLine("Indices Solid: OK")
+    
+    TransmuteLine("=== TODOS LOS TESTS PASARON ===")
+}

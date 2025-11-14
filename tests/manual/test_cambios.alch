@@ -1,0 +1,15 @@
+// Test de cambios dinámicos - MODIFICADO
+Transmutation GateOfTruth() -> void {
+    TransmuteLine("=== TEST 2 - MODIFICADO ===")
+    Solid numero = 999
+    Transmute("El nuevo número es: ")
+    TransmuteLine(numero)
+    
+    Principle test = Rejected
+    Transmute("Valor Principle modificado: ")
+    TransmuteLine(test)
+    
+    Inscription texto = "Hola Mundo"
+    Transmute("Texto: ")
+    TransmuteLine(texto)
+}

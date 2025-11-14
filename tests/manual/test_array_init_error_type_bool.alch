@@ -1,0 +1,8 @@
+// ERROR SEMÁNTICO: Tipo incorrecto - Float en array de Principle
+
+Transmutation GateOfTruth() -> void {
+    // Error: Array de Principle (bool) pero se pasa un Liquid (float)
+    AlchemicArray[Principle, 3] flags = [Accepted, 3.14, Rejected]
+    
+    Transmute("Este código no debería ejecutarse")
+}

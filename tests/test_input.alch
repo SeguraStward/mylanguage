@@ -1,0 +1,32 @@
+// Test de funciones Absorb y AbsorbSolid
+Transmutation GateOfTruth() -> void {
+    Transmute("=== TEST DE FUNCIONES DE ENTRADA ===")
+    
+    // Test 1: Absorb para strings
+    Transmute("Ingresa tu nombre:")
+    Inscription nombre = Absorb()
+    Transmute("Hola " + nombre)
+    
+    // Test 2: AbsorbSolid para enteros
+    Transmute("Ingresa tu edad:")
+    Solid edad = AbsorbSolid()
+    Transmute("Tienes " + edad + " años")
+    
+    // Test 3: Verificación con condicional
+    Observe (edad >= 18) {
+        Transmute("Eres mayor de edad")
+    } Inevitably {
+        Transmute("Eres menor de edad")
+    }
+    
+    // Test 4: Múltiples entradas
+    Transmute("Ingresa un número:")
+    Solid num1 = AbsorbSolid()
+    Transmute("Ingresa otro número:")
+    Solid num2 = AbsorbSolid()
+    
+    Solid suma = num1 + num2
+    Transmute("La suma es: " + suma)
+    
+    Transmute("=== TEST COMPLETADO ===")
+}

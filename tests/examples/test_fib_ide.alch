@@ -1,0 +1,19 @@
+// Ejemplo 3: Serie de Fibonacci
+Transmutation fibonacci(Solid n) -> Solid {
+    Observe (n <= 1) {
+        EquivalentExchange n
+    }
+    EquivalentExchange fibonacci(n - 1) + fibonacci(n - 2)
+}
+
+Transmutation GateOfTruth() -> void {
+    TransmuteLine("Serie de Fibonacci (primeros 10 numeros):")
+    
+    AlchemicCycle (Solid i = 0; i < 10; i = i + 1) {
+        Solid resultado = fibonacci(i)
+        Transmute("fib(")
+        Transmute(i)
+        Transmute(") = ")
+        TransmuteLine(resultado)
+    }
+}

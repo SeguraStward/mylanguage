@@ -1,0 +1,9 @@
+// Test: Absorb sin argumento (prompt por defecto)
+Transmutation GateOfTruth() -> void {
+    TransmuteLine("=== TEST: Absorb() sin argumento ===")
+    
+    Inscription nombre = Absorb()
+    TransmuteLine("Nombre: " + nombre)
+    
+    TransmuteLine("=== TEST COMPLETADO ===")
+}

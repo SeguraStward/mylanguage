@@ -1,0 +1,23 @@
+// Ejemplo: Calculadora de Área de Círculo
+// Demuestra uso de AbsorbLiquid() para entrada de flotantes
+
+Transmutation GateOfTruth() -> void {
+    Transmute("=== Calculadora de Área de Círculo ===")
+    Transmute("")
+    
+    Transmute("Ingrese el radio del círculo: ")
+    Liquid radio = AbsorbLiquid()
+    
+    // Calcular área: PI * r^2
+    // Aproximación de PI
+    Liquid pi = 3.14159
+    Liquid area = pi * radio * radio
+    
+    Transmute("")
+    Transmute("Radio: ")
+    Transmute(radio)
+    Transmute("")
+    Transmute("Área del círculo: ")
+    Transmute(area)
+    Transmute("")
+}

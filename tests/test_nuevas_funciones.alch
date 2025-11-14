@@ -1,0 +1,32 @@
+// Test de las nuevas funciones implementadas
+// AbsorbLiquid, AbsorbPrinciple, prompts opcionales y validación de recursión
+
+Transmutation GateOfTruth() -> void {
+    Transmute("=== TEST DE NUEVAS FUNCIONES ===")
+    
+    // Test 1: AbsorbLiquid con prompt
+    Transmute("Test 1: AbsorbLiquid con prompt")
+    Liquid precio = AbsorbLiquid("Ingresa el precio: ")
+    Transmute("Precio ingresado: " + precio)
+    
+    // Test 2: AbsorbPrinciple con entrada no vacía (debe ser Accepted/True)
+    Transmute("Test 2: AbsorbPrinciple con entrada")
+    Principle confirmacion = AbsorbPrinciple("Confirmar (cualquier texto para Accepted): ")
+    Observe (confirmacion == Accepted) {
+        Transmute("Confirmado: Accepted")
+    } Alternatively {
+        Transmute("Confirmado: Rejected")
+    }
+    
+    // Test 3: Absorb con prompt
+    Transmute("Test 3: Absorb con prompt")
+    Inscription mensaje = Absorb("Ingresa un mensaje: ")
+    Transmute("Mensaje: " + mensaje)
+    
+    // Test 4: AbsorbSolid con prompt
+    Transmute("Test 4: AbsorbSolid con prompt")
+    Solid cantidad = AbsorbSolid("Ingresa una cantidad: ")
+    Transmute("Cantidad: " + cantidad)
+    
+    Transmute("=== TEST COMPLETADO ===")
+}

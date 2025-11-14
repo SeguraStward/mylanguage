@@ -1,0 +1,20 @@
+// Test de AbsorbPrinciple - Confirmación de usuario
+Transmutation GateOfTruth() -> void {
+    Transmute("=== Sistema de Confirmación ===")
+    Transmute("")
+
+    Transmute("¿Desea continuar? (escriba algo para confirmar, Enter para cancelar):")
+    Principle confirmacion = AbsorbPrinciple()
+
+    Transmute("Resultado: ")
+    Transmute(confirmacion)
+    Transmute("")
+    
+    Observe(confirmacion == Accepted) {
+        Transmute("✓ Confirmado! Continuando...")
+    }
+    
+    Observe(confirmacion == Rejected) {
+        Transmute("✗ Cancelado. No se ingresó confirmación.")
+    }
+}

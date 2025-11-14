@@ -1,0 +1,15 @@
+AlchemicCode:
+    Liquid x = 10            # Asignar Solid a Liquid (promoción implícita)
+    TransmuteLine(x)
+    
+    x = 20                    # Otra asignación de Solid a Liquid
+    TransmuteLine(x)
+    
+    x = 3.14                  # Asignación normal de Liquid
+    TransmuteLine(x)
+    
+    Liquid y = 5 + 3         # Expresión Solid asignada a Liquid
+    TransmuteLine(y)
+    
+    Liquid z = 10.5 + 2      # Mezcla de Liquid y Solid en expresión
+    TransmuteLine(z)

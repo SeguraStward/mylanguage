@@ -1,0 +1,30 @@
+// Test: Sistema de entrada con Absorb
+Transmutation GateOfTruth() -> void {
+    TransmuteLine("=== TEST: Sistema de Entrada ===")
+    
+    // Test 1: Absorb sin argumento (prompt por defecto)
+    Inscription nombre = Absorb()
+    TransmuteLine("Tu nombre: " + nombre)
+    
+    // Test 2: Absorb con argumento (prompt personalizado)
+    Inscription apellido = Absorb("Ingresa tu apellido")
+    TransmuteLine("Tu apellido: " + apellido)
+    
+    // Test 3: AbsorbSolid sin argumento
+    Solid edad = AbsorbSolid()
+    TransmuteLine("Tu edad: " + edad)
+    
+    // Test 4: AbsorbSolid con argumento personalizado
+    Solid altura_cm = AbsorbSolid("Ingresa tu altura en cm")
+    TransmuteLine("Tu altura: " + altura_cm + " cm")
+    
+    // Test 5: AbsorbLiquid con argumento personalizado
+    Liquid peso = AbsorbLiquid("Ingresa tu peso en kg")
+    TransmuteLine("Tu peso: " + peso + " kg")
+    
+    // Test 6: AbsorbPrinciple
+    Principle activo = AbsorbPrinciple("¿Estas activo? (escribe algo para Accepted, vacio para Rejected)")
+    TransmuteLine("Estado: " + activo)
+    
+    TransmuteLine("=== FIN TEST ===")
+}

@@ -1,0 +1,8 @@
+// ERROR SINTÁCTICO: Falta corchete de cierre
+
+Transmutation GateOfTruth() -> void {
+    // Error: No hay corchete de cierre
+    AlchemicArray[Solid, 3] numeros = [10, 20, 30
+    
+    Transmute("Este código no debería ejecutarse")
+}

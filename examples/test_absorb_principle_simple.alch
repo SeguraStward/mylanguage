@@ -1,0 +1,8 @@
+// Test simple: AbsorbPrinciple básico
+Transmutation GateOfTruth() -> void {
+    Transmute("Presione Enter o escriba algo:")
+    Principle resultado = AbsorbPrinciple()
+    
+    Transmute("Recibido: ")
+    Transmute(resultado)
+}

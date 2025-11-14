@@ -1,0 +1,7 @@
+// Test de array sin inicialización
+
+Transmutation GateOfTruth() -> void {
+    AlchemicArray[Solid, 3] arr
+    Transmute(arr[0])
+    Transmute(arr[1])
+}

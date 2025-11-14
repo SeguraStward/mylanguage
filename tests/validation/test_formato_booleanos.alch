@@ -1,0 +1,23 @@
+// Test: Verificar formato de booleanos en concatenación
+Transmutation GateOfTruth() -> void {
+    TransmuteLine("=== TEST: Formato Booleanos ===")
+    
+    Principle verdadero = Accepted
+    Principle falso = Rejected
+    
+    // Verificar que se muestre "Accepted" y "Rejected"
+    // NO "True" y "False"
+    TransmuteLine("Verdadero: " + verdadero)
+    TransmuteLine("Falso: " + falso)
+    
+    // En operadores lógicos
+    Principle resultado_y = verdadero and falso
+    Principle resultado_o = verdadero or falso
+    Principle resultado_no = not verdadero
+    
+    TransmuteLine("AND: " + resultado_y)
+    TransmuteLine("OR: " + resultado_o)
+    TransmuteLine("NOT: " + resultado_no)
+    
+    TransmuteLine("=== FIN TEST ===")
+}

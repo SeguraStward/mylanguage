@@ -1,0 +1,11 @@
+// Test: Validación de límite de recursión
+Transmutation recursionInfinita(Solid n) -> Solid {
+    EquivalentExchange recursionInfinita(n + 1)
+}
+
+Transmutation GateOfTruth() -> void {
+    TransmuteLine("=== TEST: Limite de Recursion ===")
+    TransmuteLine("Llamando recursion infinita...")
+    Solid resultado = recursionInfinita(0)
+    TransmuteLine("No deberia llegar aqui")
+}

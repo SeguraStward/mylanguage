@@ -1,0 +1,6 @@
+// Test muy simple
+
+Transmutation GateOfTruth() -> void {
+    AlchemicArray[Solid, 2] arr
+    Transmute("Array creado")
+}
