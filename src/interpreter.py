@@ -20,7 +20,7 @@ class StackFrame:
     parameters: List[Any]
 
 
-class RuntimeError(Exception):
+class AurumRuntimeError(Exception):
     """Excepción para errores de tiempo de ejecución"""
     def __init__(self, message: str, instruction_pointer: int = -1):
         self.message = message
@@ -28,7 +28,7 @@ class RuntimeError(Exception):
         super().__init__(f"Error de ejecución en instrucción {instruction_pointer}: {message}")
 
 
-class aurumInterpreter:
+class AurumInterpreter:
     """Intérprete para aurum"""
     
     def __init__(self):
@@ -121,7 +121,7 @@ class aurumInterpreter:
             Lista de líneas de salida del programa
             
         Raises:
-            RuntimeError: Si ocurre un error durante la ejecución
+            AurumRuntimeError: Si ocurre un error durante la ejecución
         """
         self.output = []
         self.halted = False
@@ -131,10 +131,10 @@ class aurumInterpreter:
             try:
                 self._execute_instruction()
             except Exception as e:
-                if isinstance(e, RuntimeError):
+                if isinstance(e, AurumRuntimeError):
                     raise e
                 else:
-                    raise RuntimeError(f"Error interno: {e}", self.instruction_pointer)
+                    raise AurumRuntimeError(f"Error interno: {e}", self.instruction_pointer)
         
         return self.output
     
@@ -207,7 +207,7 @@ class aurumInterpreter:
             # Las etiquetas no hacen nada en tiempo de ejecución
             self.instruction_pointer += 1
         else:
-            raise RuntimeError(f"Instrucción no reconocida: {instruction.op}")
+            raise AurumRuntimeError(f"Instrucción no reconocida: {instruction.op}")
     
     # ========================================
     # INSTRUCCIONES DE CARGA Y ALMACENAMIENTO
@@ -222,11 +222,11 @@ class aurumInterpreter:
         """Carga un valor de memoria en la pila"""
         address = instruction.arg1
         if address >= len(self.memory):
-            raise RuntimeError(f"Dirección de memoria inválida: {address}")
+            raise AurumRuntimeError(f"Dirección de memoria inválida: {address}")
         
         value = self.memory[address]
         if value is None:
-            raise RuntimeError(f"Variable no inicializada en dirección {address}")
+            raise AurumRuntimeError(f"Variable no inicializada en dirección {address}")
         
         self.stack.append(value)
         self.instruction_pointer += 1
@@ -234,13 +234,13 @@ class aurumInterpreter:
     def _exec_store(self, instruction: Instruction) -> None:
         """Almacena el valor del tope de la pila en memoria"""
         if not self.stack:
-            raise RuntimeError("Pila vacía para operación STORE")
+            raise AurumRuntimeError("Pila vacía para operación STORE")
         
         value = self.stack.pop()
         address = instruction.arg1
         
         if address >= len(self.memory):
-            raise RuntimeError(f"Dirección de memoria inválida: {address}")
+            raise AurumRuntimeError(f"Dirección de memoria inválida: {address}")
         
         self.memory[address] = value
         self.instruction_pointer += 1
@@ -251,11 +251,11 @@ class aurumInterpreter:
         address = instruction.arg2
         
         if not self.call_stack:
-            raise RuntimeError("No hay frame de función activo")
+            raise AurumRuntimeError("No hay frame de función activo")
         
         frame = self.call_stack[-1]
         if param_index >= len(frame.parameters):
-            raise RuntimeError(f"Índice de parámetro inválido: {param_index}")
+            raise AurumRuntimeError(f"Índice de parámetro inválido: {param_index}")
         
         value = frame.parameters[param_index]
         self.memory[address] = value
@@ -268,7 +268,7 @@ class aurumInterpreter:
     def _exec_add(self) -> None:
         """Suma los dos valores del tope de la pila"""
         if len(self.stack) < 2:
-            raise RuntimeError("Pila insuficiente para operación ADD")
+            raise AurumRuntimeError("Pila insuficiente para operación ADD")
         
         b = self.stack.pop()
         a = self.stack.pop()
@@ -285,7 +285,7 @@ class aurumInterpreter:
     def _exec_sub(self) -> None:
         """Resta los dos valores del tope de la pila"""
         if len(self.stack) < 2:
-            raise RuntimeError("Pila insuficiente para operación SUB")
+            raise AurumRuntimeError("Pila insuficiente para operación SUB")
         
         b = self.stack.pop()
         a = self.stack.pop()
@@ -297,7 +297,7 @@ class aurumInterpreter:
     def _exec_mul(self) -> None:
         """Multiplica los dos valores del tope de la pila"""
         if len(self.stack) < 2:
-            raise RuntimeError("Pila insuficiente para operación MUL")
+            raise AurumRuntimeError("Pila insuficiente para operación MUL")
         
         b = self.stack.pop()
         a = self.stack.pop()
@@ -309,13 +309,13 @@ class aurumInterpreter:
     def _exec_div(self) -> None:
         """Divide los dos valores del tope de la pila"""
         if len(self.stack) < 2:
-            raise RuntimeError("Pila insuficiente para operación DIV")
+            raise AurumRuntimeError("Pila insuficiente para operación DIV")
         
         b = self.stack.pop()
         a = self.stack.pop()
         
         if b == 0:
-            raise RuntimeError("División por cero")
+            raise AurumRuntimeError("División por cero")
         
         result = a / b
         self.stack.append(result)
@@ -324,13 +324,13 @@ class aurumInterpreter:
     def _exec_mod(self) -> None:
         """Calcula el módulo de los dos valores del tope de la pila"""
         if len(self.stack) < 2:
-            raise RuntimeError("Pila insuficiente para operación MOD")
+            raise AurumRuntimeError("Pila insuficiente para operación MOD")
         
         b = self.stack.pop()
         a = self.stack.pop()
         
         if b == 0:
-            raise RuntimeError("División por cero en operación módulo")
+            raise AurumRuntimeError("División por cero en operación módulo")
         
         result = a % b
         self.stack.append(result)
@@ -339,7 +339,7 @@ class aurumInterpreter:
     def _exec_neg(self) -> None:
         """Niega el valor del tope de la pila"""
         if not self.stack:
-            raise RuntimeError("Pila vacía para operación NEG")
+            raise AurumRuntimeError("Pila vacía para operación NEG")
         
         a = self.stack.pop()
         result = -a
@@ -354,7 +354,7 @@ class aurumInterpreter:
     def _exec_eq(self) -> None:
         """Compara igualdad de los dos valores del tope de la pila"""
         if len(self.stack) < 2:
-            raise RuntimeError("Pila insuficiente para operación EQ")
+            raise AurumRuntimeError("Pila insuficiente para operación EQ")
         
         b = self.stack.pop()
         a = self.stack.pop()
@@ -366,7 +366,7 @@ class aurumInterpreter:
     def _exec_neq(self) -> None:
         """Compara desigualdad de los dos valores del tope de la pila"""
         if len(self.stack) < 2:
-            raise RuntimeError("Pila insuficiente para operación NEQ")
+            raise AurumRuntimeError("Pila insuficiente para operación NEQ")
         
         b = self.stack.pop()
         a = self.stack.pop()
@@ -378,7 +378,7 @@ class aurumInterpreter:
     def _exec_lt(self) -> None:
         """Compara menor que entre los dos valores del tope de la pila"""
         if len(self.stack) < 2:
-            raise RuntimeError("Pila insuficiente para operación LT")
+            raise AurumRuntimeError("Pila insuficiente para operación LT")
         
         b = self.stack.pop()
         a = self.stack.pop()
@@ -390,7 +390,7 @@ class aurumInterpreter:
     def _exec_gt(self) -> None:
         """Compara mayor que entre los dos valores del tope de la pila"""
         if len(self.stack) < 2:
-            raise RuntimeError("Pila insuficiente para operación GT")
+            raise AurumRuntimeError("Pila insuficiente para operación GT")
         
         b = self.stack.pop()
         a = self.stack.pop()
@@ -402,7 +402,7 @@ class aurumInterpreter:
     def _exec_leq(self) -> None:
         """Compara menor o igual entre los dos valores del tope de la pila"""
         if len(self.stack) < 2:
-            raise RuntimeError("Pila insuficiente para operación LEQ")
+            raise AurumRuntimeError("Pila insuficiente para operación LEQ")
         
         b = self.stack.pop()
         a = self.stack.pop()
@@ -414,7 +414,7 @@ class aurumInterpreter:
     def _exec_geq(self) -> None:
         """Compara mayor o igual entre los dos valores del tope de la pila"""
         if len(self.stack) < 2:
-            raise RuntimeError("Pila insuficiente para operación GEQ")
+            raise AurumRuntimeError("Pila insuficiente para operación GEQ")
         
         b = self.stack.pop()
         a = self.stack.pop()
@@ -430,7 +430,7 @@ class aurumInterpreter:
     def _exec_and(self) -> None:
         """AND lógico de los dos valores del tope de la pila"""
         if len(self.stack) < 2:
-            raise RuntimeError("Pila insuficiente para operación AND")
+            raise AurumRuntimeError("Pila insuficiente para operación AND")
         
         b = self.stack.pop()
         a = self.stack.pop()
@@ -442,7 +442,7 @@ class aurumInterpreter:
     def _exec_or(self) -> None:
         """OR lógico de los dos valores del tope de la pila"""
         if len(self.stack) < 2:
-            raise RuntimeError("Pila insuficiente para operación OR")
+            raise AurumRuntimeError("Pila insuficiente para operación OR")
         
         b = self.stack.pop()
         a = self.stack.pop()
@@ -454,7 +454,7 @@ class aurumInterpreter:
     def _exec_not(self) -> None:
         """NOT lógico del valor del tope de la pila"""
         if not self.stack:
-            raise RuntimeError("Pila vacía para operación NOT")
+            raise AurumRuntimeError("Pila vacía para operación NOT")
         
         a = self.stack.pop()
         result = not a
@@ -470,21 +470,21 @@ class aurumInterpreter:
         """Salta incondicionalmente a una etiqueta"""
         label = instruction.arg1
         if label not in self.labels:
-            raise RuntimeError(f"Etiqueta no encontrada: {label}")
+            raise AurumRuntimeError(f"Etiqueta no encontrada: {label}")
         
         self.instruction_pointer = self.labels[label]
     
     def _exec_jump_if_false(self, instruction: Instruction) -> None:
         """Salta a una etiqueta si el valor del tope de la pila es falso"""
         if not self.stack:
-            raise RuntimeError("Pila vacía para operación JUMP_IF_FALSE")
+            raise AurumRuntimeError("Pila vacía para operación JUMP_IF_FALSE")
         
         condition = self.stack.pop()
         
         if not condition:
             label = instruction.arg1
             if label not in self.labels:
-                raise RuntimeError(f"Etiqueta no encontrada: {label}")
+                raise AurumRuntimeError(f"Etiqueta no encontrada: {label}")
             self.instruction_pointer = self.labels[label]
         else:
             self.instruction_pointer += 1
@@ -505,13 +505,13 @@ class aurumInterpreter:
         
         # Verificar que la función existe
         if function_name not in self.labels:
-            raise RuntimeError(f"Función no encontrada: {function_name}")
+            raise AurumRuntimeError(f"Función no encontrada: {function_name}")
         
         # Extraer argumentos de la pila
         arguments = []
         for _ in range(arg_count):
             if not self.stack:
-                raise RuntimeError(f"Argumentos insuficientes para función {function_name}")
+                raise AurumRuntimeError(f"Argumentos insuficientes para función {function_name}")
             arguments.append(self.stack.pop())
         
         # Los argumentos están en orden inverso
@@ -534,10 +534,10 @@ class aurumInterpreter:
         """Ejecuta una función built-in del sistema"""
         if function_name == "print":
             if arg_count != 1:
-                raise RuntimeError(f"print() espera 1 argumento, se encontraron {arg_count}")
+                raise AurumRuntimeError(f"print() espera 1 argumento, se encontraron {arg_count}")
             
             if not self.stack:
-                raise RuntimeError("Argumento faltante para print()")
+                raise AurumRuntimeError("Argumento faltante para print()")
             
             value = self.stack.pop()
             self.output.append(str(value))
@@ -546,10 +546,10 @@ class aurumInterpreter:
             
         elif function_name == "write":
             if arg_count != 1:
-                raise RuntimeError(f"write() espera 1 argumento, se encontraron {arg_count}")
+                raise AurumRuntimeError(f"write() espera 1 argumento, se encontraron {arg_count}")
             
             if not self.stack:
-                raise RuntimeError("Argumento faltante para write()")
+                raise AurumRuntimeError("Argumento faltante para write()")
             
             value = self.stack.pop()
             self.output.append(str(value))
@@ -558,7 +558,7 @@ class aurumInterpreter:
             
         elif function_name == "read":
             if arg_count != 0:
-                raise RuntimeError(f"read() no espera argumentos, se encontraron {arg_count}")
+                raise AurumRuntimeError(f"read() no espera argumentos, se encontraron {arg_count}")
             
             if self.input_buffer:
                 value = self.input_buffer.pop(0)
@@ -594,7 +594,7 @@ class aurumInterpreter:
     def _exec_return_value(self) -> None:
         """Retorna de una función con valor"""
         if not self.stack:
-            raise RuntimeError("Valor de retorno faltante")
+            raise AurumRuntimeError("Valor de retorno faltante")
         
         return_value = self.stack.pop()
         
@@ -633,7 +633,7 @@ class aurumInterpreter:
     def _exec_pop(self) -> None:
         """Remueve el valor del tope de la pila"""
         if not self.stack:
-            raise RuntimeError("Pila vacía para operación POP")
+            raise AurumRuntimeError("Pila vacía para operación POP")
         
         self.stack.pop()
         self.instruction_pointer += 1
@@ -657,8 +657,8 @@ def main():
     """Función de prueba del intérprete"""
     from .lexer import AurumLexer
     from .parser import AurumParser
-    from .semantic_analyzer import aurumSemanticAnalyzer
-    from .code_generator import aurumCodeGenerator
+    from .semantic_analyzer import AurumSemanticAnalyzer
+    from .code_generator import AurumCodeGenerator
     
     # Código de prueba
     test_code = '''
@@ -685,8 +685,8 @@ def main():
         # Compilación completa
         lexer = AurumLexer()
         parser = AurumParser()
-        analyzer = aurumSemanticAnalyzer()
-        generator = aurumCodeGenerator()
+        analyzer = AurumSemanticAnalyzer()
+        generator = AurumCodeGenerator()
         
         # Análisis
         ast = parser.parse(test_code)
@@ -705,7 +705,7 @@ def main():
         print("=" * 50)
         
         # Ejecución
-        interpreter = aurumInterpreter()
+        interpreter = AurumInterpreter()
         interpreter.load_program(instructions, generator.variables, generator.functions)
         
         output = interpreter.execute()

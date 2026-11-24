@@ -1,0 +1,21 @@
+// Factorial recursivo y cálculo iterativo de potencias de 2
+func main() -> void {
+    for (int i = 1; i <= 6; i = i + 1) {
+        print(i + "! = " + factorial(i))
+    }
+
+    int potencia = 1
+    int n = 0
+    while (n < 10) {
+        potencia = potencia * 2
+        n = n + 1
+    }
+    print("2^10 = " + potencia)
+}
+
+func factorial(int n) -> int {
+    if (n <= 1) {
+        return 1
+    }
+    return n * factorial(n - 1)
+}

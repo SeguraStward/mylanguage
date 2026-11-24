@@ -23,7 +23,7 @@ def show_creation_process():
         
         {
             "step": "2️⃣ DEFINICIÓN DEL CONJUNTO DE INSTRUCCIONES",
-            "description": "Crear el 'ensamblador' de AuroLang",
+            "description": "Crear el 'ensamblador' de Aurum",
             "details": [
                 "💾 Carga/Almacenamiento: LOAD_CONST, LOAD, STORE",
                 "🧮 Aritmética: ADD, SUB, MUL, DIV, MOD, NEG", 

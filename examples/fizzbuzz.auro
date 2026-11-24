@@ -1,0 +1,14 @@
+// FizzBuzz del 1 al 15 usando if / elif / else y el operador módulo
+func main() -> void {
+    for (int i = 1; i <= 15; i = i + 1) {
+        if (i % 15 == 0) {
+            print("FizzBuzz")
+        } elif (i % 3 == 0) {
+            print("Fizz")
+        } elif (i % 5 == 0) {
+            print("Buzz")
+        } else {
+            print("" + i)
+        }
+    }
+}

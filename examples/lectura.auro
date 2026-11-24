@@ -1,0 +1,14 @@
+// Lee texto con read() y combina condiciones con and / not
+func main() -> void {
+    string nombre = read()
+    string lenguaje = read()
+
+    bool sin_nombre = nombre == ""
+    if (not sin_nombre and lenguaje == "aurum") {
+        print("Hola, " + nombre + ". Estás programando en Aurum.")
+    } elif (not sin_nombre) {
+        print("Hola, " + nombre + ". Prueba Aurum, te va a gustar.")
+    } else {
+        print("No escribiste tu nombre.")
+    }
+}
