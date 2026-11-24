@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """
-AuroLang IDE - Punto de entrada principal
+Aurum IDE - Punto de entrada principal
 """
 
 import sys
 import os
 
-from src.ide import AuroLangIDE
+from src.ide import AurumIDE
 
 
 def main():
     """Función principal"""
     try:
-        ide = AuroLangIDE()
+        ide = AurumIDE()
         ide.run()
     except KeyboardInterrupt:
         print("\n👋 ¡Hasta luego!")

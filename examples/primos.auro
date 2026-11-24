@@ -1,0 +1,19 @@
+// Números primos menores que 30 con un ciclo anidado y break
+func main() -> void {
+    for (int n = 2; n < 30; n = n + 1) {
+        if (es_primo(n)) {
+            print("" + n)
+        }
+    }
+}
+
+func es_primo(int n) -> bool {
+    int d = 2
+    while (d * d <= n) {
+        if (n % d == 0) {
+            return false
+        }
+        d = d + 1
+    }
+    return true
+}

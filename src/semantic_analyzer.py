@@ -79,7 +79,7 @@ class SemanticError(Exception):
         super().__init__(f"Error semantico en linea {line}: {message}")
 
 
-class aurumSemanticAnalyzer:
+class AurumSemanticAnalyzer:
     """la clase principal que se encarga de analizar todo el codigo"""
     
     def __init__(self):
@@ -700,7 +700,7 @@ def main():
         arbol = parser.parse(codigo_prueba)
         
         # analisis semantico
-        analizador = aurumSemanticAnalyzer()
+        analizador = AurumSemanticAnalyzer()
         errores = analizador.analyze(arbol)
         
         print("🔍 ANALISIS SEMANTICO TERMINADO")

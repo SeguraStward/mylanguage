@@ -38,7 +38,7 @@ class CodeGeneratorError(Exception):
         super().__init__(f"Error en generación de código línea {line}: {message}")
 
 
-class aurumCodeGenerator:
+class AurumCodeGenerator:
     """Generador de código para aurum"""
     
     def __init__(self):
@@ -439,7 +439,7 @@ def main():
     """Función de prueba del generador de código"""
     from .lexer import AurumLexer
     from .parser import AurumParser
-    from .semantic_analyzer import aurumSemanticAnalyzer
+    from .semantic_analyzer import AurumSemanticAnalyzer
     
     # Código de prueba
     test_code = '''
@@ -476,7 +476,7 @@ def main():
         ast = parser.parse(test_code)
         
         # Análisis semántico
-        analyzer = aurumSemanticAnalyzer()
+        analyzer = AurumSemanticAnalyzer()
         errors = analyzer.analyze(ast)
         
         if errors:
@@ -486,7 +486,7 @@ def main():
             return
         
         # Generación de código
-        generator = aurumCodeGenerator()
+        generator = AurumCodeGenerator()
         instructions = generator.generate(ast)
         
         # Mostrar código generado

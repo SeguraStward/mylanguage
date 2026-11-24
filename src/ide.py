@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox, Menu, filedialog 
 import traceback
 
-from .compiler import aurumCompiler, CompilationResult
+from .compiler import AurumCompiler, CompilationResult
 
 class AurumIDE:
 
@@ -18,7 +18,7 @@ class AurumIDE:
         self.code_modified = False
 
         # inicializar el compilador
-        self.compiler = aurumCompiler()
+        self.compiler = AurumCompiler()
         self.compiler.set_verbose(True)
         
         # resultado de compilacion actual

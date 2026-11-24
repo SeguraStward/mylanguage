@@ -9,9 +9,9 @@ from dataclasses import dataclass
 
 from .lexer import AurumLexer, LexerError
 from .parser import AurumParser, ParseError
-from .semantic_analyzer import aurumSemanticAnalyzer, SemanticError
-from .code_generator import aurumCodeGenerator, CodeGeneratorError
-from .interpreter import aurumInterpreter, RuntimeError
+from .semantic_analyzer import AurumSemanticAnalyzer, SemanticError
+from .code_generator import AurumCodeGenerator, CodeGeneratorError
+from .interpreter import AurumInterpreter, AurumRuntimeError
 
 
 @dataclass
@@ -35,16 +35,16 @@ class ExecutionResult:
     execution_time: float = 0.0
 
 
-class aurumCompiler:
+class AurumCompiler:
     """Compilador principal para aurum"""
     
     def __init__(self):
         """Inicializa el compilador"""
         self.lexer = AurumLexer()
         self.parser = AurumParser()
-        self.semantic_analyzer = aurumSemanticAnalyzer()
-        self.code_generator = aurumCodeGenerator()
-        self.interpreter = aurumInterpreter()
+        self.semantic_analyzer = AurumSemanticAnalyzer()
+        self.code_generator = AurumCodeGenerator()
+        self.interpreter = AurumInterpreter()
         
         # Estado del compilador
         self.verbose = False
@@ -130,7 +130,7 @@ class aurumCompiler:
                 print("🔍 Fase 3: Análisis Semántico...")
             
             # Crear nuevo analizador semántico para cada compilación
-            semantic_analyzer = aurumSemanticAnalyzer()
+            semantic_analyzer = AurumSemanticAnalyzer()
             semantic_errors = semantic_analyzer.analyze(ast)
             
             if semantic_errors:
@@ -243,7 +243,7 @@ class aurumCompiler:
                 execution_time=execution_time
             )
             
-        except RuntimeError as e:
+        except AurumRuntimeError as e:
             return ExecutionResult(
                 success=False,
                 output=self.interpreter.get_output(),
@@ -323,7 +323,7 @@ class aurumCompiler:
 def main():
     """Función principal de demostración"""
     # Crear compilador
-    compiler = aurumCompiler()
+    compiler = AurumCompiler()
     compiler.set_verbose(True)
     compiler.set_debug(True)
     
